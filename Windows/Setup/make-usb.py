@@ -140,8 +140,11 @@ def format_disk(dev, mnt):
         if len(parts) != 1:
             die(f'expected one partition on {dev} after erasing, found {len(parts)}')
         pdev = '/dev/' + parts[0]['DeviceIdentifier']
+        # eraseDisk mounts the new volume under /Volumes, where Spotlight
+        # starts indexing it; work on a nobrowse mount it leaves alone.
         run('diskutil', 'unmount', pdev)
-        run('diskutil', 'mount', '-mountPoint', mnt, pdev)
+        run('diskutil', 'mount', 'nobrowse', '-mountPoint', mnt, pdev)
+        remove_mac_housekeeping(mnt)
         return pdev
     for m in linux_disk(dev)['mounts']:
         run('umount', m)
@@ -179,7 +182,7 @@ def unmount(mnt, dev):
 
 def remount(pdev, mnt):
     if sys.platform == 'darwin':
-        run('diskutil', 'mount', 'readOnly', '-mountPoint', mnt, pdev)
+        run('diskutil', 'mount', 'readOnly', 'nobrowse', '-mountPoint', mnt, pdev)
     else:
         run('mount', '-t', 'vfat', '-o', 'ro,utf8', pdev, mnt)
 
@@ -239,8 +242,18 @@ def copy_tree(src, dst, skip):
     return copied
 
 
-def remove_appledouble(mnt):
-    """macOS writes ._name files beside files and folders on FAT volumes."""
+MAC_HOUSEKEEPING = ('.Spotlight-V100', '.fseventsd', '.Trashes', '.TemporaryItems')
+
+
+def remove_mac_housekeeping(mnt):
+    """macOS writes ._name files beside files and folders on FAT volumes, and
+    Spotlight and fseventsd keep folders at the root of volumes they watch."""
+    for name in MAC_HOUSEKEEPING:
+        p = Path(mnt) / name
+        if p.is_dir() and not p.is_symlink():
+            shutil.rmtree(p)
+        elif p.exists():
+            p.unlink()
     for root, dirs, files in os.walk(mnt):
         for f in files:
             if f.startswith('._') and (Path(root) / f[2:]).exists():
@@ -301,6 +314,22 @@ def verify_stick(mnt, src, copied, image, boot_wim, bcd_bytes):
     return sw
 
 
+def release(tmp, src, mnt, detach):
+    """Unmount the stick and the ISO, then remove the work folder; never
+    remove anything while a volume is still mounted inside it."""
+    if os.path.ismount(mnt):
+        if sys.platform == 'darwin':
+            run('diskutil', 'unmount', mnt, check=False, quiet=True)
+        else:
+            run('umount', mnt, check=False, quiet=True)
+    detach()
+    busy = [str(p) for p in (src, mnt) if os.path.ismount(p)]
+    if busy:
+        print(f'make-usb: still mounted, so {tmp} is left in place: {", ".join(busy)}', file=sys.stderr)
+        return
+    shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     ap.add_argument('--iso', required=True, help='official Windows 11 ARM64 ISO from microsoft.com')
@@ -318,51 +347,51 @@ def main():
         die(f'{iso} not found')
     disk = mac_disk(a.disk) if sys.platform == 'darwin' else linux_disk(a.disk)
 
-    with tempfile.TemporaryDirectory(prefix='t70-usb-') as tmp:
-        tmp = Path(tmp)
-        src, mnt, work = tmp / 'iso', tmp / 'usb', tmp / 'work'
-        for d in (src, mnt, work):
-            d.mkdir()
+    tmp = Path(tempfile.mkdtemp(prefix='t70-usb-'))
+    src, mnt, work = tmp / 'iso', tmp / 'usb', tmp / 'work'
+    for d in (src, mnt, work):
+        d.mkdir()
+    detach = lambda: None
+    try:
         detach = attach_iso(iso, src)
-        try:
-            image, fields = check_iso(src)
-            need = sum(f.stat().st_size for f in Path(src).rglob('*') if f.is_file()) + (64 << 20)
-            if disk['size'] < need:
-                die(f'{a.disk} is {disk["size"] >> 20} MiB; at least {need >> 20} MiB is needed')
-            print(f'ISO: {iso.name} (Setup {fields.get("Build", "").strip()}.{fields.get("Service Pack Build", "").strip()}, '
-                  f'{fields.get("Default Language", "").strip()})')
-            print(f'Disk: {disk["name"]}, {disk["size"] / 1e9:.1f} GB. EVERYTHING ON IT WILL BE ERASED.')
-            if not a.yes and input(f'Type the disk name ({a.disk}) to continue: ').strip() != a.disk:
-                die('cancelled; nothing written')
+        image, fields = check_iso(src)
+        need = sum(f.stat().st_size for f in Path(src).rglob('*') if f.is_file()) + (64 << 20)
+        if disk['size'] < need:
+            die(f'{a.disk} is {disk["size"] >> 20} MiB; at least {need >> 20} MiB is needed')
+        print(f'ISO: {iso.name} (Setup {fields.get("Build", "").strip()}.{fields.get("Service Pack Build", "").strip()}, '
+              f'{fields.get("Default Language", "").strip()})')
+        print(f'Disk: {disk["name"]}, {disk["size"] / 1e9:.1f} GB. EVERYTHING ON IT WILL BE ERASED.')
+        if not a.yes and input(f'Type the disk name ({a.disk}) to continue: ').strip() != a.disk:
+            die('cancelled; nothing written')
 
-            print('Making the Setup image ...', flush=True)
-            boot_wim = make_boot_wim(find(src, 'sources/boot.wim'), payload, work)
-            bcd_src = find(src, 'efi/microsoft/boot/bcd')
-            bcd_bytes, guid, state = reghive.bcd_testsigning(bcd_src.read_bytes())
-            print(f'  BCD: testsigning on for {guid} ({state})')
+        print('Making the Setup image ...', flush=True)
+        boot_wim = make_boot_wim(find(src, 'sources/boot.wim'), payload, work)
+        bcd_src = find(src, 'efi/microsoft/boot/bcd')
+        bcd_bytes, guid, state = reghive.bcd_testsigning(bcd_src.read_bytes())
+        print(f'  BCD: testsigning on for {guid} ({state})')
 
-            print('Erasing and formatting the stick ...', flush=True)
-            pdev = format_disk(a.disk, mnt)
-            boot_rel = find(src, 'sources/boot.wim').relative_to(src).as_posix().lower()
-            image_rel = image.relative_to(src).as_posix().lower()
-            bcd_rel = bcd_src.relative_to(src).as_posix().lower()
-            print('Copying the ISO files ...', flush=True)
-            copied = copy_tree(src, mnt, {boot_rel, image_rel, bcd_rel})
-            shutil.copyfile(boot_wim, mnt / find(src, 'sources/boot.wim').relative_to(src))
-            (mnt / bcd_src.relative_to(src)).write_bytes(bcd_bytes)
-            if image.suffix.lower() == '.wim' and image.stat().st_size > FAT32_MAX:
-                print(f'Splitting {image.name} ({image.stat().st_size >> 20} MiB) ...', flush=True)
-                run('wimlib-imagex', 'split', image, mnt / image.parent.relative_to(src) / 'install.swm', SPLIT_MIB)
-            else:
-                shutil.copyfile(image, mnt / image.relative_to(src))
-            if sys.platform == 'darwin':
-                remove_appledouble(mnt)
-            unmount(mnt, a.disk)
-            remount(pdev, mnt)
-            parts = verify_stick(mnt, src, copied, image, boot_wim, bcd_bytes)
-            unmount(mnt, a.disk)
-        finally:
-            detach()
+        print('Erasing and formatting the stick ...', flush=True)
+        pdev = format_disk(a.disk, mnt)
+        boot_rel = find(src, 'sources/boot.wim').relative_to(src).as_posix().lower()
+        image_rel = image.relative_to(src).as_posix().lower()
+        bcd_rel = bcd_src.relative_to(src).as_posix().lower()
+        print('Copying the ISO files ...', flush=True)
+        copied = copy_tree(src, mnt, {boot_rel, image_rel, bcd_rel})
+        shutil.copyfile(boot_wim, mnt / find(src, 'sources/boot.wim').relative_to(src))
+        (mnt / bcd_src.relative_to(src)).write_bytes(bcd_bytes)
+        if image.suffix.lower() == '.wim' and image.stat().st_size > FAT32_MAX:
+            print(f'Splitting {image.name} ({image.stat().st_size >> 20} MiB) ...', flush=True)
+            run('wimlib-imagex', 'split', image, mnt / image.parent.relative_to(src) / 'install.swm', SPLIT_MIB)
+        else:
+            shutil.copyfile(image, mnt / image.relative_to(src))
+        if sys.platform == 'darwin':
+            remove_mac_housekeeping(mnt)
+        unmount(mnt, a.disk)
+        remount(pdev, mnt)
+        parts = verify_stick(mnt, src, copied, image, boot_wim, bcd_bytes)
+        unmount(mnt, a.disk)
+    finally:
+        release(tmp, src, mnt, detach)
     if sys.platform == 'darwin':
         run('diskutil', 'eject', a.disk, check=False)
     print(f'\nDone. {len(copied)} ISO files, install image as {", ".join(parts)}, '

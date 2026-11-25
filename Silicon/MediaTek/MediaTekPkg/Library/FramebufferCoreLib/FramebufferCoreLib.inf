@@ -1,0 +1,20 @@
+[Defines]
+  INF_VERSION                    = 0x00010019
+  BASE_NAME                      = FramebufferCoreLib
+  FILE_GUID                      = 52DAF0D8-C703-4F8A-919E-4D6997AAC66C
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = MtkDisplayCoreLib
+
+[Sources]
+  MtkDisplayCore.c
+  MtkDsiCore.c
+  MtkPanelCore.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+
+[LibraryClasses]
+  BaseMemoryLib
+  FdtLib

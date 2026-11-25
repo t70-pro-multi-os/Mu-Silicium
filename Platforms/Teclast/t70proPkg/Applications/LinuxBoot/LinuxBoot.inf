@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = T70LinuxBoot
+  FILE_GUID = 786e97c0-38db-46a2-94d7-4c53c0c8bb2b
+  MODULE_TYPE = UEFI_APPLICATION
+  VERSION_STRING = 0.1
+  ENTRY_POINT = UefiMain
+[Sources]
+  LinuxBoot.c
+  LinuxLid.c
+  LinuxLid.h
+  BootPayload.h
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  ArmPkg/ArmPkg.dec
+  CryptoPkg/CryptoPkg.dec
+  SiliciumPkg/SiliciumPkg.dec
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
+  UefiLib
+  BaseLib
+  BaseMemoryLib
+  BaseCryptLib
+  DevicePathLib
+  FdtLib
+  IoLib
+  MemoryAllocationLib
+  MemoryMapLib
+[Protocols]
+  gEfiBlockIoProtocolGuid
+  gEfiLoadedImageProtocolGuid
+  gEfiLoadFile2ProtocolGuid
+  gEfiSimpleFileSystemProtocolGuid
+  gEfiDevicePathProtocolGuid
+[Guids]
+  gEfiEventExitBootServicesGuid
+  gFdtTableGuid
+  gEfiFileInfoGuid

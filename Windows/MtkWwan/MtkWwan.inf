@@ -1,0 +1,57 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=Net
+ClassGuid={4D36E972-E325-11CE-BFC1-08002BE10318}
+Provider=%Provider%
+DriverVer=11/23/2026,0.1.0.0
+CatalogFile=MtkWwan.cat
+PnpLockdown=1
+
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA6797
+
+[DestinationDirs]
+DriverCopy=12
+
+[SourceDisksNames]
+1=%Disk%,,,
+
+[SourceDisksFiles]
+MtkWwan.sys=1
+
+[DriverCopy]
+MtkWwan.sys
+
+[Install.NT]
+Characteristics=0x4
+CopyFiles=DriverCopy
+AddReg=NdiReg
+*IfType=243
+*MediaType=9
+*PhysicalMediaType=8
+EnableDhcp=0
+
+[Install.NT.Services]
+AddService=MtkWwan,2,ServiceInstall
+
+[ServiceInstall]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%12%\MtkWwan.sys
+LoadOrderGroup=NDIS
+
+[NdiReg]
+HKR,Ndi,Service,0,"MtkWwan"
+HKR,Ndi\Interfaces,UpperRange,0,"flpp4, flpp6"
+HKR,Ndi\Interfaces,LowerRange,0,"ppip"
+
+[Strings]
+Provider="T70Pro Port Project"
+Description="T70Pro MediaTek WWAN adapter"
+Disk="T70Pro ARM64 WWAN driver"

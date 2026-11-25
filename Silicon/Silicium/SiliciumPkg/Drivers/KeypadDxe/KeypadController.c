@@ -14,6 +14,7 @@
 
 #include "KeypadDxe.h"
 
+#include <Library/DebugLib.h>
 #include <Library/TimerLib.h>
 
 /**
@@ -35,7 +36,7 @@ KeypadError (
   and put them into memory scancode buffer.
   it read as much scancodes to either fill
   the memory buffer or empty the keypad buffer.
-  It is registered as running under TPL_NOTIFY
+  It is registered as running under TPL_CALLBACK.
 
   @param Event       The timer event
   @param Context     A KEYPAD_CONSOLE_IN_DEV pointer
@@ -46,34 +47,30 @@ KeypadTimerHandler (
   IN EFI_EVENT Event,
   IN VOID     *Context)
 {
-  EFI_TPL                OldTpl;
+  EFI_STATUS             Status;
   KEYPAD_CONSOLE_IN_DEV *ConsoleIn;
 
   ConsoleIn = (KEYPAD_CONSOLE_IN_DEV *)Context;
 
-  //
-  // Enter critical section
-  //
-  OldTpl = gBS->RaiseTPL (TPL_NOTIFY);
-
-  if (((KEYPAD_CONSOLE_IN_DEV *)Context)->KeypadErr) {
-    //
-    // Leave critical section and return
-    //
-    gBS->RestoreTPL (OldTpl);
+  if (ConsoleIn == NULL || ConsoleIn->Stopping || ConsoleIn->KeypadErr ||
+      ConsoleIn->KeypadDevice == NULL || ConsoleIn->KeypadDevice->GetKeys == NULL) {
     return;
   }
 
   UINT64 CurrentCounterValue = GetPerformanceCounter ();
-  UINT64 DeltaCounter        = CurrentCounterValue - ConsoleIn->Last;
+  UINT64 DeltaCounter        = ConsoleIn->LastValid ? CurrentCounterValue - ConsoleIn->Last : 0;
   ConsoleIn->Last            = CurrentCounterValue;
+  ConsoleIn->LastValid       = TRUE;
 
-  ConsoleIn->KeypadDevice->GetKeys (ConsoleIn->KeypadDevice, &ConsoleIn->KeypadReturnApi, GetTimeInNanoSecond(DeltaCounter));
+  Status = ConsoleIn->KeypadDevice->GetKeys (
+             ConsoleIn->KeypadDevice,
+             &ConsoleIn->KeypadReturnApi,
+             GetTimeInNanoSecond (DeltaCounter)
+             );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((EFI_D_WARN, "Keypad GetKeys returned %r; polling will retry.\n", Status));
+  }
 
-  //
-  // Leave critical section and return
-  //
-  gBS->RestoreTPL (OldTpl);
 }
 
 /**
@@ -92,7 +89,19 @@ InitKeypad (
   IN OUT KEYPAD_CONSOLE_IN_DEV *ConsoleIn,
   IN BOOLEAN                    ExtendedVerification)
 {
-  ConsoleIn->KeypadDevice->Reset(ConsoleIn->KeypadDevice);
+  EFI_STATUS Status;
+
+  if (ConsoleIn == NULL || ConsoleIn->KeypadDevice == NULL || ConsoleIn->KeypadDevice->Reset == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Status = ConsoleIn->KeypadDevice->Reset (ConsoleIn->KeypadDevice);
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  ConsoleIn->Last      = 0;
+  ConsoleIn->LastValid = FALSE;
 
   //
   // Clear Memory Scancode Buffer

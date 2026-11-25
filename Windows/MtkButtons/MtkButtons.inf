@@ -1,0 +1,39 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%Provider%
+DriverVer=11/13/2026,0.1.0.0
+CatalogFile=MtkButtons.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA6790
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkButtons.sys=1
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkButtons.sys
+[Install.NT.Services]
+AddService=MtkButtons,0x00000002,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\MtkButtons.sys
+[Install.NT.Wdf]
+KmdfService=MtkButtons,Wdf
+[Wdf]
+KmdfLibraryVersion=1.33
+[Strings]
+Provider="T70Pro Port Project"
+Description="MediaTek MT6789 power and volume buttons"
+Disk="T70Pro ARM64 button provider"

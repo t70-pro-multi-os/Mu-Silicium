@@ -1,0 +1,41 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%Provider%
+DriverVer=11/24/2026,0.1.1.0
+CatalogFile=MtkGpio.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA678A
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkGpio.sys=1
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkGpio.sys
+[Install.NT.Services]
+AddService=MtkGpio,0x00000002,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+; SD card detection and its GPIO interrupt provider are needed in these boot modes.
+BootFlags=0x88
+ErrorControl=1
+ServiceBinary=%13%\MtkGpio.sys
+[Install.NT.Wdf]
+KmdfService=MtkGpio,Wdf
+[Wdf]
+KmdfLibraryVersion=1.33
+[Strings]
+Provider="T70Pro Port Project"
+Description="MT6789 GPIO and EINT controller (experimental)"
+Disk="T70Pro ARM64 GPIO driver"

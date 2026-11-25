@@ -1,0 +1,39 @@
+[Defines]
+  INF_VERSION = 0x00010019
+  BASE_NAME = T70I2cPlatformDxe
+  FILE_GUID = C83F9E34-A56D-49FA-950A-E0DB591680BD
+  MODULE_TYPE = DXE_DRIVER
+  VERSION_STRING = 0.1
+  ENTRY_POINT = T70I2cPlatformEntry
+[Sources]
+  I2cPlatformDxe.c
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DebugLib
+  DevicePathLib
+  DxeServicesTableLib
+  FdtLib
+  IoLib
+  MemoryAllocationLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+[Protocols]
+  gEfiI2cMasterProtocolGuid
+  gMediaTekClockProtocolGuid
+  gMediaTekGpioProtocolGuid
+  gMediaTekI2cControllerProtocolGuid
+  gEfiDevicePathProtocolGuid
+[Guids]
+  gFdtTableGuid
+  gEfiEventReadyToBootGuid
+  gEfiEventExitBootServicesGuid
+[Depex]
+  gMediaTekClockProtocolGuid AND gMediaTekGpioProtocolGuid

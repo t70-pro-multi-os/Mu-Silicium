@@ -1,0 +1,38 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+export PATH=/bin:/sbin
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+mount -t tmpfs tmpfs /run
+mount -t tmpfs tmpfs /tmp
+
+if [ -c /dev/console ]; then
+    exec </dev/console >/dev/console 2>&1
+fi
+
+say() {
+    printf '%s\n' "$1"
+    if [ -c /dev/tty0 ] && [ ! -e /sys/class/tty/ttyAMA0 ]; then
+        printf '%s\n' "$1" >/dev/tty0
+    fi
+}
+
+release=$(uname -r)
+root=$(awk '$2 == "/" { print $3; exit }' /proc/mounts)
+say "T70 LIVE: Linux $release; root=$root (embedded initramfs)"
+if [ "$release" = 7.0.0-43-generic ] &&
+   { [ "$root" = rootfs ] || [ "$root" = tmpfs ] || [ "$root" = ramfs ]; } &&
+   (cd / && sha256sum -cs /etc/t70-modules.sha256); then
+    say 'T70_LIVE_READY: RAM root and eight embedded DKMS files verified'
+else
+    say 'T70_LIVE_ERROR: kernel, RAM root, or module inventory mismatch'
+fi
+say 'No device drivers from the T70 DKMS set are loaded automatically.'
+say 'Diagnostic shell; no disk mounts or writes are attempted.'
+
+if [ -c /dev/tty1 ] && [ ! -e /sys/class/tty/ttyAMA0 ]; then
+    while :; do setsid cttyhack sh -i </dev/tty1 >/dev/tty1 2>&1; sleep 1; done
+else
+    while :; do setsid cttyhack sh -i; sleep 1; done
+fi

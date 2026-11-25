@@ -1,0 +1,56 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=%Provider%
+DriverVer=11/20/2026,0.1.0.0
+CatalogFile=MtkConn.cat
+PnpLockdown=1
+
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA6796
+
+[DestinationDirs]
+ConnFiles=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkConn.sys=1
+soc2_2_ram_bt_1d_1_hdr.bin=1
+soc2_2_ram_wifi_1d_1_hdr.bin=1
+soc2_2_ram_mcu_1d_1_hdr.bin=1
+soc2_2_ram_bt_1e_1_hdr.bin=1
+soc2_2_ram_wifi_1e_1_hdr.bin=1
+soc2_2_ram_mcu_1e_1_hdr.bin=1
+
+[Install.NT]
+CopyFiles=ConnFiles
+[ConnFiles]
+MtkConn.sys
+soc2_2_ram_bt_1d_1_hdr.bin
+soc2_2_ram_wifi_1d_1_hdr.bin
+soc2_2_ram_mcu_1d_1_hdr.bin
+soc2_2_ram_bt_1e_1_hdr.bin
+soc2_2_ram_wifi_1e_1_hdr.bin
+soc2_2_ram_mcu_1e_1_hdr.bin
+
+[Install.NT.Services]
+AddService=MtkConn,2,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\MtkConn.sys
+[Install.NT.Wdf]
+KmdfService=MtkConn,Wdf
+[Wdf]
+KmdfLibraryVersion=1.33
+
+[Strings]
+Provider="T70Pro Port Project"
+Description="MT6789 CONN firmware and shared resource owner"
+Disk="T70Pro ARM64 CONN driver"

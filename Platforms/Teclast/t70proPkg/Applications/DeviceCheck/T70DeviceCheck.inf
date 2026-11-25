@@ -1,0 +1,51 @@
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = T70DeviceCheck
+  FILE_GUID = 5D2D4F70-9B16-47B8-90DC-A5B1C66478D2
+  MODULE_TYPE = UEFI_APPLICATION
+  VERSION_STRING = 1.0
+  ENTRY_POINT = UefiMain
+[Sources]
+  T70DeviceCheck.c
+  CaptureBmp.c
+  VisualRows.c
+  ManualExportChoice.c
+  ManualExportCore.c
+  SdFatTarget.c
+  SdFatExport.c
+  T70RamTestCore.c
+[Packages]
+  FatPkg/FatPkg.dec
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  Silicon/MediaTek/MediaTekPkg/MediaTekPkg.dec
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  UefiBootServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  PrintLib
+  DevicePathLib
+  CacheMaintenanceLib
+[Protocols]
+  gEfiUsb2HcProtocolGuid
+  gEfiUsbIoProtocolGuid
+  gEfiSdMmcPassThruProtocolGuid
+  gMediaTekMsdcDiagnosticsProtocolGuid
+  gStockPowerReadOnlyProtocolGuid ## SOMETIMES_CONSUMES
+  gMediaTekPmicGaugeProtocolGuid ## SOMETIMES_CONSUMES
+  gMediaTekPmicBatteryAdcProtocolGuid ## SOMETIMES_CONSUMES
+  gEdkiiUfsHostControllerProtocolGuid
+  gEfiUfsDeviceConfigProtocolGuid
+  gEfiScsiIoProtocolGuid
+  gEfiBlockIoProtocolGuid
+  gEfiSimpleFileSystemProtocolGuid
+  gEfiDevicePathProtocolGuid
+  gEfiLoadedImageProtocolGuid
+  gEfiGraphicsOutputProtocolGuid
+  gEfiAbsolutePointerProtocolGuid
+  gEfiSimplePointerProtocolGuid
+  gEfiSimpleTextInProtocolGuid
+  gEfiSimpleTextInputExProtocolGuid

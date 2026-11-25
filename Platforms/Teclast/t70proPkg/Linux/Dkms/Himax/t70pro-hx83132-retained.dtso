@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/dts-v1/;
+/plugin/;
+
+/ {
+	/* For an independently verified T70 DT with working providers only. */
+	fragment@0 {
+		target-path = "/soc/i2c@11e00000/himax_ts@48";
+		__overlay__ {
+			compatible = "teclast,t70pro-hx83132-retained";
+		};
+	};
+};

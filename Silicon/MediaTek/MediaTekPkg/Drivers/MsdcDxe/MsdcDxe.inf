@@ -27,8 +27,17 @@
   IoLib
   MsdcImplLib
 
+[Guids]
+  gEfiEventExitBootServicesGuid
+
 [Protocols]
+  gEfiBlockIoProtocolGuid
+  gEfiDevicePathProtocolGuid
   gEfiSdMmcPassThruProtocolGuid
+  gMediaTekMsdcDiagnosticsProtocolGuid
+  gMediaTekGpioProtocolGuid
+  gMediaTekClockProtocolGuid
+  gMediaTekPmicProtocolGuid
 
 [Depex]
-  TRUE
+  gMediaTekGpioProtocolGuid AND gMediaTekClockProtocolGuid AND gMediaTekPmicProtocolGuid

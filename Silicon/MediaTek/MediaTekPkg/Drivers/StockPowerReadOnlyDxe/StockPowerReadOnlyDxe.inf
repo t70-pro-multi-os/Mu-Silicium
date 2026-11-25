@@ -1,0 +1,22 @@
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = StockPowerReadOnlyDxe
+  FILE_GUID = 1A1E479E-ABCC-48F5-96F3-4D061DB7A9AC
+  MODULE_TYPE = DXE_DRIVER
+  VERSION_STRING = 0.1
+  ENTRY_POINT = StockPowerReadOnlyEntryPoint
+[Sources]
+  StockPowerReadOnlyDxe.c
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+[LibraryClasses]
+  StockPowerCoreLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+[Protocols]
+  gEfiI2cMasterProtocolGuid ## SOMETIMES_CONSUMES
+  gStockPowerBoardReadyProtocolGuid ## SOMETIMES_CONSUMES
+  gStockPowerReadOnlyProtocolGuid ## PRODUCES
+[Depex]
+  TRUE

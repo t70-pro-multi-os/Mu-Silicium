@@ -19,6 +19,8 @@
 #include <Library/BootGraphics.h>
 #include <Library/PrintLib.h>
 
+#include <Protocol/DxeSmmReadyToLock.h>
+
 #include <Configuration/BootDevices.h>
 
 #include "BootManager.h"
@@ -40,6 +42,20 @@ PlatformBootManagerBeforeConsole ()
 {
   // Signal End Of DXE
   EfiEventGroupSignal (&gEfiEndOfDxeEventGroupGuid);
+
+  // Publish ReadyToLock so DXE drivers dispatched after EndOfDxe can observe it
+  {
+    EFI_HANDLE  ReadyToLockHandle = NULL;
+    VOID       *ReadyToLock       = NULL;
+    if (EFI_ERROR (gBS->LocateProtocol (&gEfiDxeSmmReadyToLockProtocolGuid, NULL, &ReadyToLock))) {
+      (VOID)gBS->InstallProtocolInterface (
+                   &ReadyToLockHandle,
+                   &gEfiDxeSmmReadyToLockProtocolGuid,
+                   EFI_NATIVE_INTERFACE,
+                   NULL
+                   );
+    }
+  }
 
   // Dispatch Deferred Images
   EfiBootManagerDispatchDeferredImages ();

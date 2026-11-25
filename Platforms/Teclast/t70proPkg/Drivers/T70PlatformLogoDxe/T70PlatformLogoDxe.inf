@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = T70PlatformLogoDxe
+  MODULE_UNI_FILE                = LogoDxe.uni
+  FILE_GUID                      = 8BC7DEB1-9D07-4C73-80C0-DB6E9730540C
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = InitializeLogo
+  UEFI_HII_RESOURCE_SECTION      = TRUE
+
+[Sources]
+  Logo.bmp
+  Logo.c
+  Logo.idf
+
+[Packages]
+  MdeModulePkg/MdeModulePkg.dec
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  DebugLib
+
+[Protocols]
+  gEfiHiiDatabaseProtocolGuid
+  gEfiHiiImageExProtocolGuid
+  gEfiHiiPackageListProtocolGuid
+  gEdkiiPlatformLogoProtocolGuid
+
+[Depex]
+  gEfiHiiDatabaseProtocolGuid AND
+  gEfiHiiImageExProtocolGuid
+
+[UserExtensions.TianoCore."ExtraFiles"]
+  LogoDxeExtra.uni

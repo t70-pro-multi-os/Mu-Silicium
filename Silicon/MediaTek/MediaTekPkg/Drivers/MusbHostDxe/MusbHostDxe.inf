@@ -1,0 +1,39 @@
+[Defines]
+  INF_VERSION                    = 0x00010019
+  BASE_NAME                      = MusbHostDxe
+  FILE_GUID                      = 5E0A7863-1E62-4D01-85AB-8A3E497A6D74
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = MusbHostDxeEntryPoint
+
+[Sources]
+  MusbHostDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DevicePathLib
+  IoLib
+  MemoryAllocationLib
+  MusbHostCoreLib
+  MtkUsbPhyPlatformLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Protocols]
+  gEfiDevicePathProtocolGuid ## PRODUCES
+  gEfiUsb2HcProtocolGuid ## PRODUCES
+  gMtkMusbHostPlatformReadyProtocolGuid ## CONSUMES
+
+[Guids]
+  gEfiEventExitBootServicesGuid
+
+[Depex]
+  TRUE
+

@@ -1,0 +1,14 @@
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = MtkUfsPowerCoreLib
+  FILE_GUID = 61A5337C-3E52-4D2E-9F4B-8F7A54AE1C10
+  MODULE_TYPE = BASE
+  VERSION_STRING = 0.1
+  LIBRARY_CLASS = MtkUfsPowerCoreLib
+
+[Sources]
+  MtkUfsPowerCore.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec

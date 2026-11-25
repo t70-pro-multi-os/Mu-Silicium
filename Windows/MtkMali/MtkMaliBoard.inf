@@ -1,0 +1,40 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=Extension
+ClassGuid={e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+ExtensionId={27316789-37e8-4370-a1b3-7562f713e012}
+Provider=%Provider%
+DriverVer=11/11/2026,0.1.0.0
+CatalogFile=MtkMaliBoard.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA678E
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkMaliBoard.sys=1
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkMaliBoard.sys
+[Install.NT.Services]
+AddService=MtkMaliBoard,0,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\MtkMaliBoard.sys
+[Install.NT.Filters]
+AddFilter=MtkMaliBoard,,BoardFilter
+[BoardFilter]
+FilterPosition=Lower
+[Strings]
+Provider="T70Pro Port Project"
+Description="MT6789 Mali board resource lower filter (experimental)"
+Disk="T70Pro ARM64 Mali board filter"

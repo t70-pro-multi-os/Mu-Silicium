@@ -1,0 +1,32 @@
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = MtkUfsReadOnlyBlockIoDxe
+  FILE_GUID                      = 5E11BB88-B872-42B7-9AC2-65C39138F9D4
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = MtkUfsReadOnlyBlockIoEntryPoint
+
+[Sources]
+  MtkUfsReadOnlyBlockIoDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  DevicePathLib
+  MemoryAllocationLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  MtkUfsCoreLib
+
+[Protocols]
+  gEfiBlockIoProtocolGuid       ## PRODUCES
+  gEfiDevicePathProtocolGuid    ## CONSUMES
+  gEfiDriverBindingProtocolGuid ## PRODUCES
+  gEfiScsiIoProtocolGuid        ## CONSUMES

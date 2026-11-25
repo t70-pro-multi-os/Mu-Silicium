@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = T70ProBootStatusDxe
+  FILE_GUID = 2A70A5A3-3F11-46D8-A52E-05297A574633
+  MODULE_TYPE = DXE_DRIVER
+  VERSION_STRING = 0.1
+  ENTRY_POINT = BootStatusEntry
+[Sources]
+  BootStatusDxe.c
+[Packages]
+  MdePkg/MdePkg.dec
+[LibraryClasses]
+  BaseLib
+  UefiDriverEntryPoint
+  IoLib
+  CacheMaintenanceLib
+  BaseMemoryLib
+  FdtLib
+  UefiBootServicesTableLib
+[Guids]
+  gFdtTableGuid
+[Depex]
+  TRUE

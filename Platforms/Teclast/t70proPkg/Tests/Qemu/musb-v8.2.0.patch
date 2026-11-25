@@ -1,0 +1,133 @@
+--- a/hcd-musb.c
++++ b/t70-musb-core.inc
+@@ -23,6 +23,7 @@
+ #include "qemu/osdep.h"
+ #include "qemu/timer.h"
+ #include "hw/usb.h"
++#include "hw/usb/desc.h"
+ #include "hw/usb/hcd-musb.h"
+ #include "hw/irq.h"
+ #include "hw/hw.h"
+@@ -386,7 +387,7 @@
+ 
+     usb_bus_new(&s->bus, sizeof(s->bus), &musb_bus_ops, parent_device);
+     usb_register_port(&s->bus, &s->port, s, 0, &musb_port_ops,
+-                      USB_SPEED_MASK_LOW | USB_SPEED_MASK_FULL);
++                      USB_SPEED_MASK_LOW | USB_SPEED_MASK_FULL | USB_SPEED_MASK_HIGH);
+ 
+     return s;
+ }
+@@ -553,9 +554,10 @@
+ 
+     if (ep->status[dir] == USB_RET_NAK)
+         timeout = ep->timeout[dir];
+-    else if (ep->interrupt[dir])
+-        timeout = 8;
+     else {
++        /* USB_RET_SUCCESS already completed the transaction. Publishing its
++         * FIFO one extra millisecond later loses ACKed HID reports when the
++         * guest's bounded PIO deadline expires. Keep NAK retries timed. */
+         musb_cb_tick(ep);
+         return;
+     }
+@@ -569,10 +571,13 @@
+ 
+ static int musb_timeout(int ttype, int speed, int val)
+ {
+-#if 1
+-    return val << 3;
+-#endif
+-
++    /* TYPE encodes high/full/low as 1/2/3, unlike QEMU's 2/1/0.
++     * Limit exponent encodings before shifting an untrusted register. */
++    speed = speed == 1 ? USB_SPEED_HIGH :
++            speed == 3 ? USB_SPEED_LOW : USB_SPEED_FULL;
++    if (ttype != USB_ENDPOINT_XFER_INT || speed == USB_SPEED_HIGH) {
++        val = MIN(val, 16);
++    }
+     switch (ttype) {
+     case USB_ENDPOINT_XFER_CONTROL:
+         if (val < 2)
+@@ -632,6 +637,12 @@
+         return;
+     }
+     uep = usb_ep_get(dev, pid, ep->type[idx] & 0xf);
++    /* EP0 has a fixed 64-byte FIFO, but each IN transaction is bounded
++     * by the device's advertised packet size (e.g. an 8-byte USB hub).
++     * QEMU's generic control helper otherwise fills the whole host buffer. */
++    if (!epnum && pid == USB_TOKEN_IN && dev->device) {
++        len = MIN(len, dev->device->bMaxPacketSize0);
++    }
+     id = pid | (dev->addr << 16) | (uep->nr << 8);
+     usb_packet_setup(&ep->packey[dir].p, pid, uep, 0, id, false, true);
+     usb_packet_addbuf(&ep->packey[dir].p, ep->buf[idx], len);
+@@ -852,9 +863,8 @@
+         valid = 1;
+     }
+ 
+-    /* If the packet is not fully ready yet, wait for a next segment.  */
+-    if (epnum && (ep->fifostart[0]) < total)
+-        return;
++    /* Explicit host TXPKTRDY submits short packets too. The old peripheral
++     * FIFO-accumulation gate incorrectly waited for MAXP bytes. */
+ 
+     if (!valid)
+         total = ep->fifostart[0];
+@@ -877,36 +887,9 @@
+     MUSBEndPoint *ep = s->ep + epnum;
+     int total;
+ 
+-    /* If we already have a packet, which didn't fit into the
+-     * 64 bytes of the FIFO, only move the FIFO start and return. (Obsolete) */
+-    if (ep->packey[1].p.pid == USB_TOKEN_IN && ep->status[1] >= 0 &&
+-                    (ep->fifostart[1]) + ep->rxcount <
+-                    ep->packey[1].p.iov.size) {
+-        TRACE("0x%08x, %d",  ep->fifostart[1], ep->rxcount );
+-        ep->fifostart[1] += ep->rxcount;
+-        ep->fifolen[1] = 0;
+-
+-        ep->rxcount = MIN(ep->packey[0].p.iov.size - (ep->fifostart[1]),
+-                        ep->maxp[1]);
+-
+-        ep->csr[1] &= ~MGC_M_RXCSR_H_REQPKT;
+-        if (!epnum)
+-            ep->csr[0] &= ~MGC_M_CSR0_H_REQPKT;
+-
+-        /* Clear all of the error bits first */
+-        ep->csr[1] &= ~(MGC_M_RXCSR_H_ERROR | MGC_M_RXCSR_H_RXSTALL |
+-                        MGC_M_RXCSR_DATAERROR);
+-        if (!epnum)
+-            ep->csr[0] &= ~(MGC_M_CSR0_H_ERROR | MGC_M_CSR0_H_RXSTALL |
+-                            MGC_M_CSR0_H_NAKTIMEOUT | MGC_M_CSR0_H_NO_PING);
+-
+-        ep->csr[1] |= MGC_M_RXCSR_FIFOFULL | MGC_M_RXCSR_RXPKTRDY;
+-        if (!epnum)
+-            ep->csr[0] |= MGC_M_CSR0_RXPKTRDY;
+-        musb_rx_intr_set(s, epnum, 1);
+-        return;
+-    }
+-
++    /* MTK integration: each REQPKT starts one actual USB IN transaction.
++     * The removed upstream "Obsolete" oversized-packet splitter reuses the
++     * preceding control-status packet even when its actual length is zero. */
+     /* The driver sets maxp[1] to 64 or less because it knows the hardware
+      * FIFO is this deep.  Bigger packets get split in
+      * usb_generic_handle_packet but we can also do the splitting locally
+@@ -939,7 +922,7 @@
+ static uint8_t musb_read_fifo(MUSBEndPoint *ep)
+ {
+     uint8_t value;
+-    if (ep->fifolen[1] >= 64) {
++    if (ep->fifolen[1] >= (ep->epnum ? 512 : 64)) {
+         /* We have a FIFO underrun */
+         TRACE("EP%d FIFO is now empty, stop reading", ep->epnum);
+         return 0x00000000;
+@@ -956,7 +939,7 @@
+ static void musb_write_fifo(MUSBEndPoint *ep, uint8_t value)
+ {
+     TRACE("EP%d = %02x", ep->epnum, value);
+-    if (ep->fifolen[0] >= 64) {
++    if (ep->fifolen[0] >= (ep->epnum ? 512 : 64)) {
+         /* We have a FIFO overrun */
+         TRACE("EP%d FIFO exceeded 64 bytes, stop feeding data", ep->epnum);
+         return;

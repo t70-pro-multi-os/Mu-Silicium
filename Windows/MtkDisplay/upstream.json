@@ -1,0 +1,69 @@
+{
+  "repository": "https://github.com/microsoft/Windows-driver-samples",
+  "commit": "47e616d951b7a5aa379d7727d394d9ddc08ebd3b",
+  "component": "video/KMDOD",
+  "state": "Microsoft KMDOD mode/DDI base adapted for validated T70 inherited BGRX8 scanout; unsigned offline build and mocks only",
+  "files": {
+    "bdd.cxx": {
+      "url": "https://raw.githubusercontent.com/microsoft/Windows-driver-samples/47e616d951b7a5aa379d7727d394d9ddc08ebd3b/video/KMDOD/bdd.cxx",
+      "sha256": "9c58fcb86d5ab7f4508ae87296709583439a76802344875275daa338c6f0b425",
+      "bytes": 32131
+    },
+    "bdd.hxx": {
+      "url": "https://raw.githubusercontent.com/microsoft/Windows-driver-samples/47e616d951b7a5aa379d7727d394d9ddc08ebd3b/video/KMDOD/bdd.hxx",
+      "sha256": "ef92f8401a1f09f7a0679b4f97a90b6cfb64278aefc3c9b5614e4a22a500fac7",
+      "bytes": 23144
+    },
+    "bdd_ddi.cxx": {
+      "url": "https://raw.githubusercontent.com/microsoft/Windows-driver-samples/47e616d951b7a5aa379d7727d394d9ddc08ebd3b/video/KMDOD/bdd_ddi.cxx",
+      "sha256": "17c9dd48b5b48ef27b58d4b697aca2fa76d7945ba7a2091b775391ec6039a25e",
+      "bytes": 18333
+    },
+    "bdd_dmm.cxx": {
+      "url": "https://raw.githubusercontent.com/microsoft/Windows-driver-samples/47e616d951b7a5aa379d7727d394d9ddc08ebd3b/video/KMDOD/bdd_dmm.cxx",
+      "sha256": "ae89d45222dc4dbb0aab65b599bd18c04272b09eeb261bb438c8401fdd067c1b",
+      "bytes": 53872
+    },
+    "bdd_errorlog.hxx": {
+      "url": "https://raw.githubusercontent.com/microsoft/Windows-driver-samples/47e616d951b7a5aa379d7727d394d9ddc08ebd3b/video/KMDOD/bdd_errorlog.hxx",
+      "sha256": "302ea1e9e5c0205f218e5f1d53284ccfd3a4e5787ed70cebaeba3f2892be34b3",
+      "bytes": 2577
+    },
+    "bdd_util.cxx": {
+      "url": "https://raw.githubusercontent.com/microsoft/Windows-driver-samples/47e616d951b7a5aa379d7727d394d9ddc08ebd3b/video/KMDOD/bdd_util.cxx",
+      "sha256": "501efb5fecf6f3b3acba72438738d668e7c954747edbb69eb45476e23bcd0f59",
+      "bytes": 3142
+    },
+    "bltfuncs.cxx": {
+      "url": "https://raw.githubusercontent.com/microsoft/Windows-driver-samples/47e616d951b7a5aa379d7727d394d9ddc08ebd3b/video/KMDOD/bltfuncs.cxx",
+      "sha256": "a73c319ddcbc1c39024e0202c7631ad891f5612bf8ad72fe2f15180895bec075",
+      "bytes": 12796
+    },
+    "blthw.cxx": {
+      "url": "https://raw.githubusercontent.com/microsoft/Windows-driver-samples/47e616d951b7a5aa379d7727d394d9ddc08ebd3b/video/KMDOD/blthw.cxx",
+      "sha256": "a01d8ec8b7a183d5a863f9d048b889061f2b532cbf8943f06da00f022747c4d9",
+      "bytes": 16369
+    },
+    "memory.cxx": {
+      "url": "https://raw.githubusercontent.com/microsoft/Windows-driver-samples/47e616d951b7a5aa379d7727d394d9ddc08ebd3b/video/KMDOD/memory.cxx",
+      "sha256": "3286baaa3f0cdae440e357f2765f6d768f864a253be2ae356a1d4130001a98a4",
+      "bytes": 2206
+    }
+  },
+  "license_sha256": "07639618c7b94ab9953cc61715f6325877e1854dca611ed9b1bd54497cf5e93a",
+  "adaptation": {
+    "unused_upstream_files_removed": [
+      "bltfuncs.cxx"
+    ],
+    "replaced_sample_renderer": "blthw.cxx uses synchronous checked Framebuffer.c with no fake IRQ/thread",
+    "changes": [
+      "strict HANA678C and DFBI ownership gate",
+      "four software rotations and bounded source pinning",
+      "fixed native target and native/transposed source modes",
+      "pinned mode/path checks before framebuffer writes",
+      "UC framebuffer mapping matches GOP producer",
+      "refuse unimplemented panel/PHY power transitions",
+      "remove sample registry writes"
+    ]
+  }
+}

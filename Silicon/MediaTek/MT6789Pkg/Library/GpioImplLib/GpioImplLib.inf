@@ -14,3 +14,6 @@
   MdeModulePkg/MdeModulePkg.dec
   SiliciumPkg/SiliciumPkg.dec
   MediaTekPkg/MediaTekPkg.dec
+
+[LibraryClasses]
+  IoLib

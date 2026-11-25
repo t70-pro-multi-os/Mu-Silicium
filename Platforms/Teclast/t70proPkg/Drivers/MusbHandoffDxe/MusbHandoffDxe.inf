@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION                    = 0x00010019
+  BASE_NAME                      = MusbHandoffDxe
+  FILE_GUID                      = B740FB47-60B3-40A5-82BE-86DF5F027134
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = MusbHandoffDxeEntryPoint
+
+[Sources]
+  MusbHandoffDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DxeServicesTableLib
+  FdtLib
+  IoLib
+  MemoryAllocationLib
+  MusbHostCoreLib
+  StockPowerCoreLib
+  MtkUsbPhyPlatformLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Protocols]
+  gEfiDxeSmmReadyToLockProtocolGuid ## CONSUMES
+  gEfiDevicePathProtocolGuid ## CONSUMES
+  gEfiUsb2HcProtocolGuid ## CONSUMES
+  gEfiUsbIoProtocolGuid ## CONSUMES
+  gEfiI2cMasterProtocolGuid ## CONSUMES
+  gMediaTekI2cExclusiveProtocolGuid ## CONSUMES
+  gMediaTekClockProtocolGuid ## CONSUMES
+  gMediaTekGpioProtocolGuid ## CONSUMES
+  gMediaTekI2cControllerProtocolGuid ## CONSUMES
+  gStockPowerReadOnlyProtocolGuid ## CONSUMES
+  gStockPowerBoardReadyProtocolGuid ## PRODUCES
+  gMtkMusbHostPlatformReadyProtocolGuid ## PRODUCES
+
+[Guids]
+  gEfiEventBeforeExitBootServicesGuid
+  gEfiEventExitBootServicesGuid
+  gEfiEndOfDxeEventGroupGuid
+  gFdtTableGuid
+
+[Depex]
+  gMediaTekClockProtocolGuid AND gMediaTekGpioProtocolGuid AND gStockPowerReadOnlyProtocolGuid

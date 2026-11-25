@@ -2,6 +2,8 @@
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Library/IoLib.h>
+#include <Library/TimerLib.h>
+#include <Library/SynchronizationLib.h>
 
 #include <Protocol/MtkPmicWrapper.h>
 #include <Protocol/MtkPmic.h>
@@ -20,7 +22,7 @@ typedef enum {
 
 typedef struct {
   UINT32 Voltage;
-  UINT8  Mask;
+  UINT16 Mask;
 } MTK_VOSEL;
 
 typedef struct {
@@ -126,10 +128,39 @@ STATIC CONST MTK_VOSEL mVcn33Ranges[] = {
 };
 
 STATIC CONST MTK_VOSEL mVmcRanges[] = {
-  {1800000, 0x4},
-  {2900000, 0xA},
-  {3000000, 0xB},
-  {3300000, 0xD},
+  {1800000, 0x400},
+  {1810000, 0x401},
+  {1820000, 0x402},
+  {1830000, 0x403},
+  {1840000, 0x404},
+  {1850000, 0x405},
+  {1860000, 0x406},
+  {1870000, 0x407},
+  {1880000, 0x408},
+  {1890000, 0x409},
+  {1900000, 0x40A},
+  {2900000, 0xA00},
+  {2910000, 0xA01},
+  {2920000, 0xA02},
+  {2930000, 0xA03},
+  {2940000, 0xA04},
+  {2950000, 0xA05},
+  {2960000, 0xA06},
+  {2970000, 0xA07},
+  {2980000, 0xA08},
+  {2990000, 0xA09},
+  {3000000, 0xB00},
+  {3010000, 0xB01},
+  {3020000, 0xB02},
+  {3030000, 0xB03},
+  {3040000, 0xB04},
+  {3050000, 0xB05},
+  {3060000, 0xB06},
+  {3070000, 0xB07},
+  {3080000, 0xB08},
+  {3090000, 0xB09},
+  {3100000, 0xB0A},
+  {3300000, 0xD00},
 };
 
 STATIC CONST MTK_VOSEL mVldo28Ranges[] = {
@@ -210,6 +241,22 @@ STATIC CONST MTK_REGULATOR_DESC mRegulators[] = {
     {
       .Con0Reg  = 0x1508,
       .VSelReg  = 0x1526,
+      .VSelMask = 0x7f,
+      .Step     = 6250,
+      .Min      = 500000,
+      .Max      = 1293750,
+    },
+  },
+  {
+    // LDO with a linear 6.25 mV selector, so it uses the buck description:
+    // enable LDO_VSRAM_GPU_CON0[0], selector LDO_VSRAM_CON3[6:0]
+    // (mt6358-regulator.c MT6358_LDO1 "ldo_vsram_gpu", also used for MT6366).
+    .Name = "ldo_vsram_gpu",
+    .Type = Buck,
+    .Buck =
+    {
+      .Con0Reg  = 0x1bc8,
+      .VSelReg  = 0x1bf4,
       .VSelMask = 0x7f,
       .Step     = 6250,
       .Min      = 500000,
@@ -522,8 +569,8 @@ STATIC CONST MTK_REGULATOR_DESC mRegulators[] = {
     {
       .Con0Reg    = 0x1cc4,
       .AnaReg     = 0x1e4c,
-      .VoselShift = 8,
-      .VoselMask  = 0xf,
+      .VoselShift = 0,
+      .VoselMask  = 0xfff,
       .Ranges     = mVmcRanges,
       .RangesLen  = ARRAY_SIZE (mVmcRanges),
     },
@@ -583,8 +630,9 @@ PowerButtonPressed (
 {
   UINT16 Value;
 
-  // Read status of the power button from TopStatus register
-  mPmicWrapper->Read (MT6358_TOPSTATUS, &Value);
+  if (Pressed == NULL) { return; }
+  *Pressed = FALSE;
+  if (EFI_ERROR (mPmicWrapper->Read (MT6358_TOPSTATUS, &Value))) { return; }
   Value &= MT6358_PWRKEY_MASK;
 
   *Pressed = (Value == 0) ? TRUE : FALSE;
@@ -596,88 +644,167 @@ HomeButtonPressed (
 {
   UINT16 Value;
 
-  // Read status of the home button from TopStatus register
-  mPmicWrapper->Read (MT6358_TOPSTATUS, &Value);
+  if (Pressed == NULL) { return; }
+  *Pressed = FALSE;
+  if (EFI_ERROR (mPmicWrapper->Read (MT6358_TOPSTATUS, &Value))) { return; }
   Value &= MT6358_HOMEKEY_MASK;
 
   *Pressed = (Value == 0) ? TRUE : FALSE;
 }
 
+STATIC
 EFI_STATUS
-RegulatorSetEnable(
+UpdatePmicBits (UINT16 Address, UINT16 Mask, UINT16 Bits)
+{
+  EFI_STATUS Status;
+  UINT16 Value;
+
+  Status = mPmicWrapper->Read (Address, &Value);
+  if (EFI_ERROR (Status)) { return Status; }
+  return mPmicWrapper->Write (Address, (Value & ~Mask) | (Bits & Mask));
+}
+
+STATIC
+BOOLEAN
+IsVmchEint (CONST CHAR8 *Name)
+{
+  return (Name != NULL) &&
+    ((AsciiStrCmp (Name, "vmch_eint_low") == 0) ||
+     (AsciiStrCmp (Name, "vmch_eint_high") == 0));
+}
+
+STATIC
+EFI_STATUS
+RegulatorSetEnableUnlocked(
   IN CONST CHAR8 *Name,
   IN BOOLEAN Enable)
 {
+  EFI_STATUS Status;
   UINT16 Value;
-  CONST MTK_REGULATOR_DESC *Regulator = GetRegulatorByName(Name);
+  CONST MTK_REGULATOR_DESC *Regulator = GetRegulatorByName(IsVmchEint (Name) ? "ldo_vmch" : Name);
   if (Regulator == NULL) {
     DEBUG ((EFI_D_ERROR, "Invalid regulator name \"%a\" is provided\n", Name));
     return EFI_INVALID_PARAMETER;
   }
 
+  if (IsVmchEint (Name)) {
+    UINT16 OldEint, OldLdo;
+    EFI_STATUS RestoreEint, RestoreLdo;
+    // Snapshot both registers before any write. Preserve unrelated PMIC bits.
+    Status = mPmicWrapper->Read (0x1D70, &OldEint);
+    if (EFI_ERROR (Status)) { return Status; }
+    Status = mPmicWrapper->Read (0x1CD8, &OldLdo);
+    if (EFI_ERROR (Status)) { return Status; }
+    if ((((OldLdo | OldEint) & BIT0) != 0) &&
+        (((OldEint & BIT2) != 0) != (AsciiStrCmp (Name, "vmch_eint_high") == 0))) {
+      return EFI_ACCESS_DENIED;
+    }
+    if (Enable) {
+      Status = UpdatePmicBits (0x1D70, BIT2,
+                  AsciiStrCmp (Name, "vmch_eint_high") == 0 ? BIT2 : 0);
+      if (!EFI_ERROR (Status)) { Status = UpdatePmicBits (0x1CD8, BIT0, BIT0); }
+      if (!EFI_ERROR (Status)) { Status = UpdatePmicBits (0x1D70, BIT0, BIT0); }
+    } else {
+      Status = UpdatePmicBits (0x1CD8, BIT0, 0);
+      if (!EFI_ERROR (Status)) {
+        MicroSecondDelay (1500);
+        Status = UpdatePmicBits (0x1D70, BIT0, 0);
+      }
+    }
+    if (!EFI_ERROR (Status)) { return EFI_SUCCESS; }
+    // A failed transfer may already have reached the PMIC. Restore even that
+    // register; report a distinct device error if restoration cannot finish.
+    RestoreLdo = UpdatePmicBits (0x1CD8, BIT0, OldLdo);
+    if ((OldLdo & BIT0) == 0) MicroSecondDelay (1500);
+    RestoreEint = UpdatePmicBits (0x1D70, BIT0 | BIT2, OldEint);
+    return EFI_ERROR (RestoreEint) || EFI_ERROR (RestoreLdo) ? EFI_DEVICE_ERROR : Status;
+  }
+
   switch (Regulator->Type) {
   case Ldo:
     // Write enable bit to CON0 register
-    mPmicWrapper->Read(Regulator->Ldo.Con0Reg, &Value);
+    Status = mPmicWrapper->Read (Regulator->Ldo.Con0Reg, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
     if (Enable) {
       Value |= MT6358_CON0_ENABLE_MASK;
     } else {
       Value &= ~MT6358_CON0_ENABLE_MASK;
     }
-    mPmicWrapper->Write(Regulator->Ldo.Con0Reg, Value);
-    return EFI_SUCCESS;
+    return mPmicWrapper->Write (Regulator->Ldo.Con0Reg, Value);
   case FixedLdo:
     // Write enable bit to CON0 register
-    mPmicWrapper->Read(Regulator->FixedLdo.Con0Reg, &Value);
+    Status = mPmicWrapper->Read (Regulator->FixedLdo.Con0Reg, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
     if (Enable) {
       Value |= MT6358_CON0_ENABLE_MASK;
     } else {
       Value &= ~MT6358_CON0_ENABLE_MASK;
     }
-    mPmicWrapper->Write(Regulator->FixedLdo.Con0Reg, Value);
-    return EFI_SUCCESS;
+    return mPmicWrapper->Write (Regulator->FixedLdo.Con0Reg, Value);
   case Buck:
     // Write enable bit to CON0 register
-    mPmicWrapper->Read(Regulator->Buck.Con0Reg, &Value);
+    Status = mPmicWrapper->Read (Regulator->Buck.Con0Reg, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
     if (Enable) {
       Value |= MT6358_CON0_ENABLE_MASK;
     } else {
       Value &= ~MT6358_CON0_ENABLE_MASK;
     }
-    mPmicWrapper->Write(Regulator->Buck.Con0Reg, Value);
-    return EFI_SUCCESS;
+    return mPmicWrapper->Write (Regulator->Buck.Con0Reg, Value);
   default:
     DEBUG ((EFI_D_ERROR, "Invalid regulator type %d\n", Regulator->Type));
     return EFI_INVALID_PARAMETER;
   }
 }
 
+STATIC
 EFI_STATUS
-RegulatorIsEnabled(
+RegulatorIsEnabledUnlocked(
   IN  CONST CHAR8 *Name,
   OUT BOOLEAN *Enabled)
 {
+  EFI_STATUS Status;
   UINT16 Value;
-  CONST MTK_REGULATOR_DESC *Regulator = GetRegulatorByName(Name);
+  CONST MTK_REGULATOR_DESC *Regulator = GetRegulatorByName(IsVmchEint (Name) ? "ldo_vmch" : Name);
   if (Regulator == NULL) {
     DEBUG ((EFI_D_ERROR, "Invalid regulator name \"%a\" is provided\n", Name));
     return EFI_INVALID_PARAMETER;
   }
 
+  if (Enabled == NULL) { return EFI_INVALID_PARAMETER; }
+
+  if (IsVmchEint (Name)) {
+    UINT16 Ldo;
+    Status = mPmicWrapper->Read (0x1D70, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
+    Status = mPmicWrapper->Read (0x1CD8, &Ldo);
+    if (EFI_ERROR (Status)) { return Status; }
+    if ((Value & BIT0) != (Ldo & BIT0)) { return EFI_DEVICE_ERROR; }
+    if (((Value & BIT0) != 0) &&
+        (((Value & BIT2) != 0) != (AsciiStrCmp (Name, "vmch_eint_high") == 0))) {
+      return EFI_ACCESS_DENIED;
+    }
+    *Enabled = (Value & BIT0) != 0;
+    return EFI_SUCCESS;
+  }
+
   switch (Regulator->Type) {
   case Ldo:
     // Read enable bit from CON0 register
-    mPmicWrapper->Read(Regulator->Ldo.Con0Reg, &Value);
+    Status = mPmicWrapper->Read (Regulator->Ldo.Con0Reg, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
     *Enabled = Value & MT6358_CON0_ENABLE_MASK;
     return EFI_SUCCESS;
   case FixedLdo:
     // Read enable bit from CON0 register
-    mPmicWrapper->Read(Regulator->FixedLdo.Con0Reg, &Value);
+    Status = mPmicWrapper->Read (Regulator->FixedLdo.Con0Reg, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
     *Enabled = Value & MT6358_CON0_ENABLE_MASK;
     return EFI_SUCCESS;
   case Buck:
     // Read enable bit from CON0 register
-    mPmicWrapper->Read(Regulator->Buck.Con0Reg, &Value);
+    Status = mPmicWrapper->Read (Regulator->Buck.Con0Reg, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
     *Enabled = Value & MT6358_CON0_ENABLE_MASK;
     return EFI_SUCCESS;
   default:
@@ -686,27 +813,29 @@ RegulatorIsEnabled(
   }
 }
 
+STATIC
 EFI_STATUS
-RegulatorSetVoltage(
+RegulatorSetVoltageUnlocked(
   IN CONST CHAR8 *Name,
   IN UINT32 Voltage)
 {
+  EFI_STATUS Status;
   UINT16 Value;
-  CONST MTK_REGULATOR_DESC *Regulator = GetRegulatorByName(Name);
+  CONST MTK_REGULATOR_DESC *Regulator = GetRegulatorByName(IsVmchEint (Name) ? "ldo_vmch" : Name);
   if (Regulator == NULL) {
     DEBUG ((EFI_D_ERROR, "Invalid regulator name \"%a\" is provided\n", Name));
     return EFI_INVALID_PARAMETER;
   }
 
   switch (Regulator->Type) {
-  case Ldo:
+  case Ldo: {
     UINTN Index;
-    UINT8 Vosel;
+    UINT16 Vosel;
 
     // Map specified voltage to voltage selection
     for (Index = 0; Index < Regulator->Ldo.RangesLen; Index++) {
       if (Voltage == Regulator->Ldo.Ranges[Index].Voltage) {
-        Vosel = Regulator->Ldo.Ranges[Index].Voltage;
+        Vosel = Regulator->Ldo.Ranges[Index].Mask;
         break;
       }
     }
@@ -717,52 +846,56 @@ RegulatorSetVoltage(
     }
 
     // Write voltage selection to analog register
-    mPmicWrapper->Read (Regulator->Ldo.AnaReg, &Value);
+    Status = mPmicWrapper->Read (Regulator->Ldo.AnaReg, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
     Value &= ~(Regulator->Ldo.VoselMask << Regulator->Ldo.VoselShift);
     Value |= Vosel << Regulator->Ldo.VoselShift;
-    mPmicWrapper->Write(Regulator->Ldo.AnaReg, Value);
-    return EFI_SUCCESS;
+    return mPmicWrapper->Write (Regulator->Ldo.AnaReg, Value);
+  }
   case FixedLdo:
     // Voltage of Fixed LDO cannot be changed
     return EFI_UNSUPPORTED;
   case Buck:
-    // Clamp voltage to the valid range
-    if (Voltage > Regulator->Buck.Max) {
-      Voltage = Regulator->Buck.Max;
-    } else if (Voltage < Regulator->Buck.Min) {
-      Voltage = Regulator->Buck.Min;
+    if ((Voltage < Regulator->Buck.Min) || (Voltage > Regulator->Buck.Max) ||
+        ((Voltage - Regulator->Buck.Min) % Regulator->Buck.Step != 0)) {
+      return EFI_INVALID_PARAMETER;
     }
 
     // Write voltage to VSel register
-    mPmicWrapper->Read (Regulator->Buck.VSelReg, &Value);
+    Status = mPmicWrapper->Read (Regulator->Buck.VSelReg, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
     Value &= ~Regulator->Buck.VSelMask;
     Value |= ((Voltage - Regulator->Buck.Min) / Regulator->Buck.Step) & Regulator->Buck.VSelMask;
-    mPmicWrapper->Write(Regulator->Buck.VSelReg, Value);
-    return EFI_SUCCESS;
+    return mPmicWrapper->Write (Regulator->Buck.VSelReg, Value);
   default:
     DEBUG ((EFI_D_ERROR, "Invalid regulator type %d\n", Regulator->Type));
     return EFI_INVALID_PARAMETER;
   }
 }
 
+STATIC
 EFI_STATUS
-RegulatorGetVoltage(
+RegulatorGetVoltageUnlocked(
   IN  CONST CHAR8 *Name,
   OUT UINT32 *Voltage)
 {
+  EFI_STATUS Status;
   UINT16 Value;
 
   // Find regulator by name
-  CONST MTK_REGULATOR_DESC *Regulator = GetRegulatorByName(Name);
+  CONST MTK_REGULATOR_DESC *Regulator = GetRegulatorByName(IsVmchEint (Name) ? "ldo_vmch" : Name);
   if (Regulator == NULL) {
     DEBUG ((EFI_D_ERROR, "Invalid regulator name \"%a\" is provided\n", Name));
     return EFI_INVALID_PARAMETER;
   }
 
+  if (Voltage == NULL) { return EFI_INVALID_PARAMETER; }
+
   switch (Regulator->Type) {
   case Ldo:
     // Read voltage selection from Analog register
-    mPmicWrapper->Read(Regulator->Ldo.AnaReg, &Value);
+    Status = mPmicWrapper->Read (Regulator->Ldo.AnaReg, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
     Value = (Value >> Regulator->Ldo.VoselShift) & Regulator->Ldo.VoselMask;
 
     // Map voltage selection to voltage
@@ -780,7 +913,8 @@ RegulatorGetVoltage(
     return EFI_SUCCESS;
   case Buck:
     // Read voltage selection from VSel register
-    mPmicWrapper->Read (Regulator->Buck.VSelReg, &Value);
+    Status = mPmicWrapper->Read (Regulator->Buck.VSelReg, &Value);
+    if (EFI_ERROR (Status)) { return Status; }
     Value &= Regulator->Buck.VSelMask;
 
     // Calculate voltage based on selection
@@ -790,6 +924,59 @@ RegulatorGetVoltage(
     DEBUG ((EFI_D_ERROR, "Invalid regulator type %d\n", Regulator->Type));
     return EFI_INVALID_PARAMETER;
   }
+}
+
+// Serialize the complete regulator transaction, including snapshots and rollback.
+// Do not spin: a higher-TPL caller may have interrupted the current owner.
+// This is not a lease for clients using the raw PMIC wrapper directly.
+STATIC volatile UINT32 mRegulatorBusy;
+
+EFI_STATUS
+RegulatorSetEnable (IN CONST CHAR8 *Name, BOOLEAN Enable)
+{
+  EFI_STATUS Status;
+  if (InterlockedCompareExchange32 (&mRegulatorBusy, 0, 1) != 0) {
+    return EFI_NOT_READY;
+  }
+  Status = RegulatorSetEnableUnlocked (Name, Enable);
+  InterlockedCompareExchange32 (&mRegulatorBusy, 1, 0);
+  return Status;
+}
+
+EFI_STATUS
+RegulatorIsEnabled (IN CONST CHAR8 *Name, BOOLEAN * Enabled)
+{
+  EFI_STATUS Status;
+  if (InterlockedCompareExchange32 (&mRegulatorBusy, 0, 1) != 0) {
+    return EFI_NOT_READY;
+  }
+  Status = RegulatorIsEnabledUnlocked (Name, Enabled);
+  InterlockedCompareExchange32 (&mRegulatorBusy, 1, 0);
+  return Status;
+}
+
+EFI_STATUS
+RegulatorSetVoltage (IN CONST CHAR8 *Name, UINT32 Voltage)
+{
+  EFI_STATUS Status;
+  if (InterlockedCompareExchange32 (&mRegulatorBusy, 0, 1) != 0) {
+    return EFI_NOT_READY;
+  }
+  Status = RegulatorSetVoltageUnlocked (Name, Voltage);
+  InterlockedCompareExchange32 (&mRegulatorBusy, 1, 0);
+  return Status;
+}
+
+EFI_STATUS
+RegulatorGetVoltage (IN CONST CHAR8 *Name, UINT32 * Voltage)
+{
+  EFI_STATUS Status;
+  if (InterlockedCompareExchange32 (&mRegulatorBusy, 0, 1) != 0) {
+    return EFI_NOT_READY;
+  }
+  Status = RegulatorGetVoltageUnlocked (Name, Voltage);
+  InterlockedCompareExchange32 (&mRegulatorBusy, 1, 0);
+  return Status;
 }
 
 STATIC MTK_PMIC_PROTOCOL mPmic = {

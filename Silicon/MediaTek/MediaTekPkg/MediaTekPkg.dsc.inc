@@ -16,6 +16,8 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdAcpiDefaultOemId|"MTK   "
 
 [LibraryClasses]
+  StockPowerCoreLib|MediaTekPkg/Library/StockPowerCoreLib/StockPowerCoreLib.inf
+  MtkStpCoreLib|MediaTekPkg/Library/MtkStpCoreLib/MtkStpCoreLib.inf
   #
   # ARM Libraries
   #

@@ -45,6 +45,7 @@
   gEfiEndOfDxeEventGroupGuid
 
 [Protocols]
+  gEfiDxeSmmReadyToLockProtocolGuid
   gKeypadDeviceProtocolGuid
   gEfiGraphicsOutputProtocolGuid
   gEfiSimpleTextInputExProtocolGuid

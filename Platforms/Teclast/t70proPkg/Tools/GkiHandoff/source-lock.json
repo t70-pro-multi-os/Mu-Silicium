@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "kernel_release": "6.12.38-android16-5-g3c4da6410bcb-ab13872285-4k",
+  "stock_image_sha256": "5a8be048cddedd45da4d8a9ce415d3cbf89046d4ac549dfd8d398dd6359daa9d",
+  "sources": {
+    "common": {
+      "url": "https://android.googlesource.com/kernel/common",
+      "commit": "3c4da6410bcbca1c8cb12e7e65d8b531f7873152",
+      "sparse": []
+    },
+    "toolchains/clang": {
+      "url": "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86",
+      "commit": "70a12c4fe88940ab2b0e6d763492dffa2f07e15a",
+      "sparse": [
+        "clang-r536225"
+      ]
+    },
+    "toolchains/rust": {
+      "url": "https://android.googlesource.com/platform/prebuilts/rust",
+      "commit": "b9c747ff3d3c30c2014b6f94f8599415010ac37f",
+      "sparse": [
+        "linux-x86/1.82.0"
+      ]
+    },
+    "toolchains/kernel-tools": {
+      "url": "https://android.googlesource.com/kernel/prebuilts/build-tools",
+      "commit": "010d8a83d84ced4beef7779453766350db8c08cd",
+      "sparse": [
+        "linux-x86",
+        "sysroots"
+      ]
+    }
+  },
+  "note": "Common source is the matching release commit. Toolchain repository snapshots are pinned and contain the exact Clang build 12833971 and Rust build 12909517 named in the shipped config; this is not a recovered complete CI manifest.",
+  "build_environment": {
+    "RUSTC_FORCE_RUSTC_VERSION": "rustc-android"
+  },
+  "build_environment_reference": "https://android.googlesource.com/kernel/build/+/9ab2f7613dbe496714ac1d049d169427116bec33/kleaf/impl/kernel_env.bzl"
+}

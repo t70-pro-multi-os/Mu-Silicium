@@ -1,0 +1,66 @@
+/* SPDX-License-Identifier: BSD-2-Clause-Patent */
+#ifndef T70_WWAN_DMA_TEST_NTDDK_H
+#define T70_WWAN_DMA_TEST_NTDDK_H
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+typedef int8_t CHAR; typedef uint8_t UCHAR,BOOLEAN; typedef int32_t LONG,NTSTATUS;
+typedef uint32_t ULONG; typedef uint64_t ULONGLONG,ULONG64; typedef size_t SIZE_T,ULONG_PTR; typedef ULONG *PULONG;
+typedef void VOID,*PVOID; typedef UCHAR KIRQL,*PKIRQL; typedef int64_t LONGLONG;
+typedef struct { int64_t QuadPart; } PHYSICAL_ADDRESS;
+typedef struct _DEVICE_OBJECT { ULONG Reserved; } DEVICE_OBJECT,*PDEVICE_OBJECT;
+typedef struct _IRP { ULONG Reserved; } IRP,*PIRP;
+typedef struct _MDL { PVOID Address; ULONG Bytes; } MDL,*PMDL;
+typedef struct _SCATTER_GATHER_ELEMENT { PHYSICAL_ADDRESS Address; ULONG Length; ULONG_PTR Reserved; } SCATTER_GATHER_ELEMENT,*PSCATTER_GATHER_ELEMENT;
+typedef struct _SCATTER_GATHER_LIST { ULONG NumberOfElements; ULONG_PTR Reserved; SCATTER_GATHER_ELEMENT Elements[1]; } SCATTER_GATHER_LIST,*PSCATTER_GATHER_LIST;
+typedef VOID DRIVER_LIST_CONTROL(PDEVICE_OBJECT,PIRP,PSCATTER_GATHER_LIST,PVOID);
+typedef DRIVER_LIST_CONTROL *PDRIVER_LIST_CONTROL;
+typedef struct _DMA_COMMON_BUFFER_VECTOR *PDMA_COMMON_BUFFER_VECTOR;
+typedef struct _DMA_ADAPTER DMA_ADAPTER,*PDMA_ADAPTER;
+typedef struct _DMA_ADAPTER_INFO { ULONG Version; union { struct { ULONG ReadDmaCounterAvailable, ScatterGatherLimit, DmaAddressWidth; } V1; } ; } DMA_ADAPTER_INFO,*PDMA_ADAPTER_INFO;
+typedef struct _DEVICE_DESCRIPTION { ULONG Version; BOOLEAN Master,ScatterGather,Dma64BitAddresses; ULONG DmaAddressWidth,MaximumLength; } DEVICE_DESCRIPTION,*PDEVICE_DESCRIPTION;
+typedef struct _DMA_OPERATIONS {
+  ULONG Size;
+  VOID (*PutDmaAdapter)(PDMA_ADAPTER);
+  NTSTATUS (*GetDmaAdapterInfo)(PDMA_ADAPTER,PDMA_ADAPTER_INFO);
+  PVOID (*AllocateCommonBuffer)(PDMA_ADAPTER,ULONG,PHYSICAL_ADDRESS*,BOOLEAN);
+  VOID (*FreeCommonBuffer)(PDMA_ADAPTER,ULONG,PHYSICAL_ADDRESS,PVOID,BOOLEAN);
+  NTSTATUS (*GetScatterGatherList)(PDMA_ADAPTER,PDEVICE_OBJECT,PMDL,PVOID,ULONG,PDRIVER_LIST_CONTROL,PVOID,BOOLEAN);
+  VOID (*PutScatterGatherList)(PDMA_ADAPTER,PSCATTER_GATHER_LIST,BOOLEAN);
+  NTSTATUS (*AllocateCommonBufferVector)(PDMA_ADAPTER,PHYSICAL_ADDRESS,PHYSICAL_ADDRESS,ULONG,ULONG,ULONG,ULONG,ULONG,PDMA_COMMON_BUFFER_VECTOR*);
+  VOID (*GetCommonBufferFromVectorByIndex)(PDMA_ADAPTER,PDMA_COMMON_BUFFER_VECTOR,ULONG,PVOID*,PHYSICAL_ADDRESS*);
+  VOID (*FreeCommonBufferVector)(PDMA_ADAPTER,PDMA_COMMON_BUFFER_VECTOR);
+} DMA_OPERATIONS,*PDMA_OPERATIONS;
+struct _DMA_ADAPTER { PDMA_OPERATIONS DmaOperations; };
+#define TRUE 1
+#define FALSE 0
+#define DEVICE_DESCRIPTION_VERSION3 3U
+#define DMA_ADAPTER_INFO_VERSION1 1U
+#define MmWriteCombined 1U
+#define MM_ANY_NODE_OK 0U
+#define DISPATCH_LEVEL 2U
+#define STATUS_SUCCESS ((NTSTATUS)0)
+#define STATUS_INVALID_PARAMETER ((NTSTATUS)0xC000000D)
+#define STATUS_DEVICE_BUSY ((NTSTATUS)0xC000009E)
+#define STATUS_DELETE_PENDING ((NTSTATUS)0xC0000056)
+#define STATUS_INSUFFICIENT_RESOURCES ((NTSTATUS)0xC000009A)
+#define STATUS_NOT_SUPPORTED ((NTSTATUS)0xC00000BB)
+#define STATUS_DEVICE_CONFIGURATION_ERROR ((NTSTATUS)0xC0000182)
+#define STATUS_INVALID_BUFFER_SIZE ((NTSTATUS)0xC0000206)
+#define STATUS_INVALID_DEVICE_STATE ((NTSTATUS)0xC0000184)
+#define STATUS_IO_DEVICE_ERROR ((NTSTATUS)0xC0000185)
+#define NT_SUCCESS(Status) ((NTSTATUS)(Status)>=0)
+#define FIELD_OFFSET(Type,Field) offsetof(Type,Field)
+#define RtlZeroMemory(Buffer,Bytes) memset((Buffer),0,(Bytes))
+#define NdisZeroMemory(Buffer,Bytes) memset((Buffer),0,(Bytes))
+#define MmGetMdlByteCount(Mdl) ((Mdl)->Bytes)
+#define MmGetSystemAddressForMdlSafe(Mdl,Priority) ((Mdl)->Address)
+LONG InterlockedCompareExchange(volatile LONG*,LONG,LONG);
+LONG InterlockedExchange(volatile LONG*,LONG);
+LONG InterlockedIncrement(volatile LONG*);
+LONG InterlockedDecrement(volatile LONG*);
+PDMA_ADAPTER IoGetDmaAdapter(PDEVICE_OBJECT,PDEVICE_DESCRIPTION,PULONG);
+KIRQL KeGetCurrentIrql(VOID);
+VOID KeRaiseIrql(KIRQL,PKIRQL);
+VOID KeLowerIrql(KIRQL);
+#endif

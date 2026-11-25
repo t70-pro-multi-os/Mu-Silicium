@@ -1,0 +1,51 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=Battery
+ClassGuid={72631E54-78A4-11D0-BCF7-00AA00B7B32A}
+Provider=%Provider%
+DriverVer=11/23/2026,0.1.0.0
+CatalogFile=MtkBattery.cat
+PnpLockdown=1
+
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA679B
+
+[DestinationDirs]
+DriverCopy=13
+
+[SourceDisksNames]
+1=%Disk%,,,
+
+[SourceDisksFiles]
+MtkBattery.sys=1
+
+[Install.NT]
+CopyFiles=DriverCopy
+
+[DriverCopy]
+MtkBattery.sys
+
+[Install.NT.Services]
+AddService=MtkBattery,0x00000002,Service
+
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\MtkBattery.sys
+
+[Install.NT.Wdf]
+KmdfService=MtkBattery,Wdf
+
+[Wdf]
+KmdfLibraryVersion=1.33
+
+[Strings]
+Provider="T70Pro Port Project"
+Description="MediaTek MT6366 battery and fuel gauge"
+Disk="T70Pro ARM64 battery provider"

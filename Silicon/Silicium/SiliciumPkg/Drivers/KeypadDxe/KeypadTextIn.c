@@ -150,8 +150,6 @@ KeypadReadKeyStrokeWorker(
   //
   OldTpl = gBS->RaiseTPL(TPL_NOTIFY);
 
-  KeypadTimerHandler(NULL, ConsoleInDev);
-
   if (ConsoleInDev->KeypadErr) {
     DEBUG ((EFI_D_ERROR, "An Keypad Error occured!\n"));
     Status = EFI_DEVICE_ERROR;
@@ -234,6 +232,7 @@ KeypadReadKeyStroke(
   KEYPAD_CONSOLE_IN_DEV *ConsoleIn;
   EFI_KEY_DATA             KeyData;
 
+  if (This == NULL || Key == NULL) return EFI_INVALID_PARAMETER;
   ConsoleIn = KEYPAD_CONSOLE_IN_DEV_FROM_THIS(This);
 
   //
@@ -288,46 +287,19 @@ KeypadWaitForKey(
   IN EFI_EVENT Event,
   IN VOID     *Context)
 {
-  EFI_TPL                OldTpl;
-  KEYPAD_CONSOLE_IN_DEV *ConsoleIn;
-  EFI_KEY_DATA           KeyData;
+  KEYPAD_CONSOLE_IN_DEV *ConsoleIn = Context;
+  EFI_KEY_QUEUE *Queue = &ConsoleIn->EfiKeyQueue;
 
-  ConsoleIn = (KEYPAD_CONSOLE_IN_DEV *)Context;
-
-  //
-  // Enter critical section
-  //
-  OldTpl = gBS->RaiseTPL(TPL_NOTIFY);
-
-  KeypadTimerHandler(NULL, ConsoleIn);
-
-  if (!ConsoleIn->KeypadErr) {
-    //
-    // WaitforKey doesn't suppor the partial key.
-    // Considering if the partial keystroke is enabled, there maybe a partial
-    // keystroke in the queue, so here skip the partial keystroke and get the
-    // next key from the queue
-    //
-    while (!IsEfikeyBufEmpty(&ConsoleIn->EfiKeyQueue)) {
-      CopyMem(&KeyData, &(ConsoleIn->EfiKeyQueue.Buffer[ConsoleIn->EfiKeyQueue.Head]), sizeof(EFI_KEY_DATA));
-
-      if (KeyData.Key.ScanCode == SCAN_NULL && KeyData.Key.UnicodeChar == CHAR_NULL) {
-        PopEfikeyBufHead(&ConsoleIn->EfiKeyQueue, &KeyData);
-        continue;
-      }
-
-      //
-      // if there is pending value key, signal the event.
-      //
-      gBS->SignalEvent(Event);
+  if (ConsoleIn->KeypadErr || ConsoleIn->Stopping) return;
+  // Keep partial keys available for SimpleTextInputEx.
+  for (UINTN Index = Queue->Head; Index != Queue->Tail;
+       Index = (Index + 1) % KEYPAD_EFI_KEY_MAX_COUNT) {
+    CONST EFI_INPUT_KEY *Key = &Queue->Buffer[Index].Key;
+    if (Key->ScanCode != SCAN_NULL || Key->UnicodeChar != CHAR_NULL) {
+      gBS->SignalEvent (Event);
       break;
     }
   }
-
-  //
-  // Leave critical section and return
-  //
-  gBS->RestoreTPL(OldTpl);
 }
 
 /**
@@ -343,7 +315,10 @@ KeypadWaitForKeyEx(
   IN EFI_EVENT Event,
   IN VOID     *Context)
 {
-  KeypadWaitForKey(Event, Context);
+  KEYPAD_CONSOLE_IN_DEV *ConsoleIn = Context;
+  if (!ConsoleIn->KeypadErr && !ConsoleIn->Stopping && !IsEfikeyBufEmpty (&ConsoleIn->EfiKeyQueue)) {
+    gBS->SignalEvent (Event);
+  }
 }
 
 /**
@@ -456,11 +431,14 @@ KeypadSetState(
 
   if ((*KeyToggleState & EFI_SCROLL_LOCK_ACTIVE) == EFI_SCROLL_LOCK_ACTIVE) {
     ConsoleInDev->ScrollLock = TRUE;
-  } else if ((*KeyToggleState & EFI_NUM_LOCK_ACTIVE) == EFI_NUM_LOCK_ACTIVE) {
+  }
+  if ((*KeyToggleState & EFI_NUM_LOCK_ACTIVE) == EFI_NUM_LOCK_ACTIVE) {
     ConsoleInDev->NumLock = TRUE;
-  } else if ((*KeyToggleState & EFI_CAPS_LOCK_ACTIVE) == EFI_CAPS_LOCK_ACTIVE) {
+  }
+  if ((*KeyToggleState & EFI_CAPS_LOCK_ACTIVE) == EFI_CAPS_LOCK_ACTIVE) {
     ConsoleInDev->CapsLock = TRUE;
-  } else if ((*KeyToggleState & EFI_KEY_STATE_EXPOSED) == EFI_KEY_STATE_EXPOSED) {
+  }
+  if ((*KeyToggleState & EFI_KEY_STATE_EXPOSED) == EFI_KEY_STATE_EXPOSED) {
     ConsoleInDev->IsSupportPartialKey = TRUE;
   }
 
@@ -646,30 +624,45 @@ KeyNotifyProcessHandler(
 
   ConsoleIn = (KEYPAD_CONSOLE_IN_DEV *)Context;
 
-  //
-  // Invoke notification functions.
-  //
+  // A callback may unregister itself or another callback. Never retain a
+  // list entry across a call into external code. Reentrant dispatch leaves
+  // queued keys for this outer invocation; Stop must retain this context.
+  OldTpl = gBS->RaiseTPL(TPL_NOTIFY);
+  if (ConsoleIn->NotifyDispatchActive || ConsoleIn->Stopping) {
+    gBS->RestoreTPL(OldTpl);
+    return;
+  }
+  ConsoleIn->NotifyDispatchActive = TRUE;
+  gBS->RestoreTPL(OldTpl);
   NotifyList = &ConsoleIn->NotifyList;
   while (TRUE) {
-    //
-    // Enter critical section
-    //
     OldTpl = gBS->RaiseTPL(TPL_NOTIFY);
     Status = PopEfikeyBufHead(&ConsoleIn->EfiKeyQueueForNotify, &KeyData);
-
-    //
-    // Leave critical section
-    //
-    gBS->RestoreTPL(OldTpl);
     if (EFI_ERROR(Status)) {
+      ConsoleIn->NotifyDispatchActive = FALSE;
+      gBS->RestoreTPL(OldTpl);
       break;
     }
-
+    // Only registrations present when this key is dequeued receive it.
     for (Link = GetFirstNode(NotifyList); !IsNull(NotifyList, Link); Link = GetNextNode(NotifyList, Link)) {
       CurrentNotify = CR(Link, KEYPAD_CONSOLE_IN_EX_NOTIFY, NotifyEntry, KEYPAD_CONSOLE_IN_EX_NOTIFY_SIGNATURE);
-      if (IsKeyRegistered(&CurrentNotify->KeyData, &KeyData)) {
-        CurrentNotify->KeyNotificationFn(&KeyData);
+      CurrentNotify->DispatchPending = IsKeyRegistered(&CurrentNotify->KeyData, &KeyData);
+    }
+    gBS->RestoreTPL(OldTpl);
+    while (TRUE) {
+      EFI_KEY_NOTIFY_FUNCTION Callback = NULL;
+      OldTpl = gBS->RaiseTPL(TPL_NOTIFY);
+      for (Link = GetFirstNode(NotifyList); !IsNull(NotifyList, Link); Link = GetNextNode(NotifyList, Link)) {
+        CurrentNotify = CR(Link, KEYPAD_CONSOLE_IN_EX_NOTIFY, NotifyEntry, KEYPAD_CONSOLE_IN_EX_NOTIFY_SIGNATURE);
+        if (CurrentNotify->DispatchPending) {
+          CurrentNotify->DispatchPending = FALSE;
+          Callback = CurrentNotify->KeyNotificationFn;
+          break;
+        }
       }
+      gBS->RestoreTPL(OldTpl);
+      if (Callback == NULL) break;
+      Callback(&KeyData);
     }
   }
 }

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+# The stock kernel has no devtmpfs. PROGRAM runs synchronously, before udev
+# permission/metadata processing and its userspace event broadcast.
+ACTION=="add|remove", ENV{MAJOR}=="?*", PROGRAM=="/bin/mdev", ENV{T70_DEVNODE_HANDLED}="1"
+ACTION=="remove", GOTO="teclast_desktop_end"
+SUBSYSTEM=="input", MODE="0600"
+SUBSYSTEM=="input", KERNEL=="event*", TAG+="seat"
+SUBSYSTEM=="drm", MODE="0600", TAG+="seat"
+LABEL="teclast_desktop_end"

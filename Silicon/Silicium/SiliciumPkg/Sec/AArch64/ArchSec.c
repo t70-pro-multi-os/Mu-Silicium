@@ -8,6 +8,10 @@
 
 #include "Sec.h"
 
+#ifdef T70PRO_RAM_DIAGNOSTICS
+VOID T70ProRecordSecException (UINT32 Type, UINTN LR);
+#endif
+
 VOID
 SecCommonExceptionEntry (
   IN UINT32 Type,
@@ -15,6 +19,10 @@ SecCommonExceptionEntry (
 {
   CHAR8 Buffer[100];
   UINTN CharCount;
+
+#ifdef T70PRO_RAM_DIAGNOSTICS
+  T70ProRecordSecException (Type, LR);
+#endif
 
   // Set Exception Message
   switch (Type) {

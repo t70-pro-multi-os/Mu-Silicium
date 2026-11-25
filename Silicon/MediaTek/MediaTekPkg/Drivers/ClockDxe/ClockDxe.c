@@ -8,17 +8,57 @@
 
 #include <Protocol/MtkClock.h>
 
-#define BIT(x) (1 << (x))
+#define BIT(x) (1U << (x))
 #define GENMASK(h, l) (((~0ULL) - ((1ULL << (l)) - 1)) & (~0ULL >> (63 - (h))))
 
 #define REG_CON0 0
 
 #define CON0_PWR_ON BIT(0)
 #define CON0_ISO_EN BIT(1)
+#define CON1_PCW_CHG BIT(31)
 
 #define POSTDIV_MASK GENMASK(2, 0)
 
 STATIC EFI_MEMORY_REGION_DESCRIPTOR mClockControllersRegions[ClkMax];
+
+STATIC BOOLEAN ClockControllerRequired (IN MTK_CLOCK_CONTROLLER_TYPE Controller) {
+  for (UINTN Index = 0; Index < gClockCount; Index++) {
+    CONST MTK_CLOCK_DESC *Clock = &gClocks[Index];
+    if (Clock->Controller == Controller &&
+        (Clock->Type == ClockTypePll || Clock->Type == ClockTypeMux ||
+         Clock->Type == ClockTypeMuxGate || Clock->Type == ClockTypeGate)) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+STATIC EFI_STATUS LocateOptionalClockControllerRegion (
+  IN CONST CHAR8                 *Name,
+  IN MTK_CLOCK_CONTROLLER_TYPE   Controller
+  )
+{
+  if (Controller >= ClkMax) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (!ClockControllerRequired (Controller)) {
+    // Some MediaTek SoCs share this driver without exposing these wrappers.
+    mClockControllersRegions[Controller].Address = 0;
+    mClockControllersRegions[Controller].Length  = 0;
+    return EFI_SUCCESS;
+  }
+
+  return LocateMemoryRegionByName ((CHAR8 *)Name, &mClockControllersRegions[Controller]);
+}
+
+STATIC UINT32 PllGateOffset (CONST MTK_PLL_DESC *Pll) {
+  return Pll->EnableMask ? Pll->EnableOffset : Pll->BaseOffset + REG_CON0;
+}
+STATIC UINT32 PllGateMask (CONST MTK_PLL_DESC *Pll) {
+  return Pll->EnableMask ? Pll->EnableMask : Pll->EnMask;
+}
 
 EFI_STATUS
 ClockGetFrequency(
@@ -30,15 +70,19 @@ ClockGetParent(
   IN  UINT32 ClockId,
   OUT UINT32 *ParentId);
 
+EFI_STATUS
+ClockIsEnabled (IN UINT32 ClockId, OUT BOOLEAN *Enabled);
+
 STATIC
 UINT32
 ClockRead(
   IN MTK_CLOCK_CONTROLLER_TYPE Controller,
   IN UINT32 Reg)
 {
-  if (Controller >= ClkMax) {
+  if ((UINTN)Controller >= ClkMax) {
     DEBUG ((EFI_D_ERROR, "Invalid clock controller %d\n", Controller));
     ASSERT_EFI_ERROR (EFI_INVALID_PARAMETER);
+    return 0;
   }
 
   return MmioRead32 (mClockControllersRegions[Controller].Address + Reg);
@@ -51,9 +95,10 @@ ClockWrite(
   IN UINT32 Reg,
   IN UINT32 Value)
 {
-  if (Controller >= ClkMax) {
+  if ((UINTN)Controller >= ClkMax) {
     DEBUG ((EFI_D_ERROR, "Invalid clock controller %d\n", Controller));
     ASSERT_EFI_ERROR (EFI_INVALID_PARAMETER);
+    return;
   }
 
   MmioWrite32 (mClockControllersRegions[Controller].Address + Reg, Value);
@@ -103,10 +148,9 @@ PllCalcValues(
   )
 {
   EFI_STATUS Status;
-  UINT32 Value;
   UINT64 ParentFrequency;
-  UINT64 Pcw;
-  UINT32 PostDiv;
+  UINT64 Vco, Pcw;
+  UINT32 PostDiv, FractionBits;
 
   // Check if parameters are valid
   if (Clock == NULL || PcwResult == NULL || PostDivResult == NULL) {
@@ -123,13 +167,12 @@ PllCalcValues(
     Frequency = Clock->Pll.FMax;
   }
 
-  // Find PostDiv value
-  for (Value = 0; Value < 5; Value++) {
-    PostDiv = 1 << Value;
-    if (Frequency * PostDiv >= Clock->Pll.FMin) {
-      break;
-    }
+  // The PLL has a maximum post-divider of 16 and a minimum VCO frequency.
+  if (Frequency < (Clock->Pll.FMin + 15) / 16) {
+    return EFI_UNSUPPORTED;
   }
+  for (PostDiv = 1; Frequency * PostDiv < Clock->Pll.FMin; PostDiv <<= 1) {}
+  Vco = Frequency * PostDiv;
 
   // Get Parent Clock Frequency
   Status = ClockGetFrequency(Clock->Pll.Parent, &ParentFrequency);
@@ -137,9 +180,17 @@ PllCalcValues(
     return Status;
   }
 
-  // Calculate Pcw
-  Pcw = (Frequency << Value) << (Clock->Pll.PcwBits - Clock->Pll.PcwiBits);
-  Pcw /= ParentFrequency;
+  if (ParentFrequency == 0) {
+    return EFI_NOT_READY;
+  }
+  FractionBits = Clock->Pll.PcwBits - Clock->Pll.PcwiBits;
+  if (Vco > (MAX_UINT64 >> FractionBits)) {
+    return EFI_UNSUPPORTED;
+  }
+  Pcw = (Vco << FractionBits) / ParentFrequency;
+  if (Pcw > GENMASK(Clock->Pll.PcwBits - 1, 0)) {
+    return EFI_UNSUPPORTED;
+  }
 
   // Return Pcw and PostDiv
   *PcwResult = Pcw;
@@ -185,13 +236,14 @@ ClockGetName(
   return EFI_SUCCESS;
 }
 
-EFI_STATUS
-ClockSetEnable(
+STATIC EFI_STATUS
+ClockSetEnableLocked(
   IN UINT32 ClockId,
   IN BOOLEAN Enable)
 {
   EFI_STATUS Status;
   UINT32 Value;
+  BOOLEAN Enabled;
 
   // Find Clock by Id
   CONST MTK_CLOCK_DESC *Clock = ClockGetById(ClockId);
@@ -205,10 +257,13 @@ ClockSetEnable(
     // Fixed Clock is always enabled
     return EFI_SUCCESS;
   case ClockTypePll:
-    // Enable Parent Clock
-    Status = ClockSetEnable(Clock->Pll.Parent, Enable);
-    if (EFI_ERROR (Status)) {
-      return Status;
+    // Boot firmware may already be using this PLL for another device.
+    Status = ClockIsEnabled (ClockId, &Enabled);
+    if (EFI_ERROR (Status)) { return Status; }
+    if (Enabled == Enable) { return EFI_SUCCESS; }
+    if (Enable) {
+      Status = ClockSetEnableLocked (Clock->Pll.Parent, TRUE);
+      if (EFI_ERROR (Status)) { return Status; }
     }
 
     if (Enable) {
@@ -224,10 +279,20 @@ ClockSetEnable(
       ClockWrite(Clock->Controller, Clock->Pll.PowerOffset, Value);
       MicroSecondDelay(1);
 
-      // Enable PLL
-      Value = ClockRead(Clock->Controller, Clock->Pll.BaseOffset + REG_CON0);
-      Value |= Clock->Pll.EnMask;
-      ClockWrite(Clock->Controller, Clock->Pll.BaseOffset + REG_CON0, Value);
+      // The shipped MT6789 handler sets optional divided outputs first.
+      if (Clock->Pll.EnableMask && Clock->Pll.EnMask) {
+        Value = ClockRead(Clock->Controller, PllGateOffset(&Clock->Pll));
+        Value |= Clock->Pll.EnMask;
+        ClockWrite(Clock->Controller, PllGateOffset(&Clock->Pll), Value);
+      }
+      Value = ClockRead(Clock->Controller, PllGateOffset(&Clock->Pll));
+      Value |= PllGateMask(&Clock->Pll);
+      ClockWrite(Clock->Controller, PllGateOffset(&Clock->Pll), Value);
+      if (Clock->Pll.TunerEnableMask) {
+        Value = ClockRead(Clock->Controller, Clock->Pll.TunerEnableOffset);
+        Value |= Clock->Pll.TunerEnableMask;
+        ClockWrite(Clock->Controller, Clock->Pll.TunerEnableOffset, Value);
+      }
       MicroSecondDelay(20);
 
       if (Clock->Pll.ResetBarMask) {
@@ -244,10 +309,21 @@ ClockSetEnable(
         ClockWrite(Clock->Controller, Clock->Pll.BaseOffset + REG_CON0, Value);
       }
 
-      // Disable PLL
-      Value = ClockRead(Clock->Controller, Clock->Pll.BaseOffset + REG_CON0);
-      Value &= ~Clock->Pll.EnMask;
-      ClockWrite(Clock->Controller, Clock->Pll.BaseOffset + REG_CON0, Value);
+      if (Clock->Pll.TunerEnableMask) {
+        Value = ClockRead(Clock->Controller, Clock->Pll.TunerEnableOffset);
+        Value &= ~Clock->Pll.TunerEnableMask;
+        ClockWrite(Clock->Controller, Clock->Pll.TunerEnableOffset, Value);
+      }
+      // The shipped handler clears the gate, then optional divided outputs
+      // in a second RMW. USB CON0 bit0 is PCW and is never a gate here.
+      Value = ClockRead(Clock->Controller, PllGateOffset(&Clock->Pll));
+      Value &= ~PllGateMask(&Clock->Pll);
+      ClockWrite(Clock->Controller, PllGateOffset(&Clock->Pll), Value);
+      if (Clock->Pll.EnableMask && Clock->Pll.EnMask) {
+        Value = ClockRead(Clock->Controller, PllGateOffset(&Clock->Pll));
+        Value &= ~Clock->Pll.EnMask;
+        ClockWrite(Clock->Controller, PllGateOffset(&Clock->Pll), Value);
+      }
 
       // Enable PLL ISO
       Value = ClockRead(Clock->Controller, Clock->Pll.PowerOffset);
@@ -262,16 +338,17 @@ ClockSetEnable(
     return EFI_SUCCESS;
   case ClockTypeMux:
   case ClockTypeMuxGate:
+    if (!Enable && (Clock->Type == ClockTypeMux)) { return EFI_UNSUPPORTED; }
     // Get Parent Clock
     Status = ClockGetParent(Clock->Id, &Value);
     if (EFI_ERROR (Status)) {
       return Status;
     }
 
-    // Enable Parent Clock
-    Status = ClockSetEnable(Value, Enable);
-    if (EFI_ERROR (Status)) {
-      return Status;
+    // Parents are shared. Disabling this gate must not disable its parent.
+    if (Enable) {
+      Status = ClockSetEnableLocked (Value, TRUE);
+      if (EFI_ERROR (Status)) { return Status; }
     }
 
     // If Clock is MuxGate enable or disable it
@@ -281,12 +358,12 @@ ClockSetEnable(
     return EFI_SUCCESS;
   case ClockTypeFactors:
     // Enable Parent Clock
-    return ClockSetEnable(Clock->Factor.Parent, Enable);
+    return Enable ? ClockSetEnableLocked (Clock->Factor.Parent, TRUE) : EFI_UNSUPPORTED;
   case ClockTypeGate:
     // Enable Parent Clock
-    Status = ClockSetEnable(Clock->Gate.Parent, Enable);
-    if (EFI_ERROR (Status)) {
-      return Status;
+    if (Enable) {
+      Status = ClockSetEnableLocked (Clock->Gate.Parent, TRUE);
+      if (EFI_ERROR (Status)) { return Status; }
     }
 
     // Invert enable  if gate is inverted
@@ -299,8 +376,9 @@ ClockSetEnable(
       // Read status register
       Value = ClockRead(Clock->Controller, Clock->Gate.StatusOffset);
 
-      if (Enable) {
-        // Set enable bit
+      if (!Enable) {
+        // Gate status bits are active low (inversion was applied above).
+        // Set disable bit
         Value |= BIT(Clock->Gate.GateShift);
       } else {
         // Clear enable bit
@@ -319,6 +397,15 @@ ClockSetEnable(
     DEBUG ((EFI_D_ERROR, "Invalid clock type %d\n", Clock->Type));
     return EFI_INVALID_PARAMETER;
   }
+}
+
+EFI_STATUS
+ClockSetEnable (IN UINT32 ClockId, IN BOOLEAN Enable)
+{
+  EFI_TPL OldTpl = gBS->RaiseTPL (TPL_NOTIFY);
+  EFI_STATUS Status = ClockSetEnableLocked (ClockId, Enable);
+  gBS->RestoreTPL (OldTpl);
+  return Status;
 }
 
 EFI_STATUS
@@ -347,9 +434,10 @@ ClockIsEnabled(
     *Enabled = TRUE;
     return EFI_SUCCESS;
   case ClockTypePll:
-    // Read PLL Enable Status
-    Value = ClockRead(Clock->Controller, Clock->Pll.BaseOffset + REG_CON0);
-    *Enabled = (Value & Clock->Pll.EnMask) != 0;
+    // Match the descriptor's actual gate, not an unrelated PCW bit.
+    if (PllGateMask(&Clock->Pll) == 0) { return EFI_UNSUPPORTED; }
+    Value = ClockRead(Clock->Controller, PllGateOffset(&Clock->Pll));
+    *Enabled = (Value & PllGateMask(&Clock->Pll)) != 0;
     return EFI_SUCCESS;
   case ClockTypeMuxGate:
     // Read Mux Gate Enable Status
@@ -397,7 +485,7 @@ ClockGetFrequency(
     // Return Fixed Frequency
     *Frequency = Clock->Fixed;
     return EFI_SUCCESS;
-  case ClockTypePll:
+  case ClockTypePll: {
     // Read PostDiv and Pcw values
     UINT32 PostDiv = ClockRead(Clock->Controller, Clock->Pll.PostDivOffset);
     UINT32 Pcw = ClockRead(Clock->Controller, Clock->Pll.PcwOffset);
@@ -406,7 +494,7 @@ ClockGetFrequency(
 
     // Get PostDiv and Pcw values
     PostDiv = BIT((PostDiv >> Clock->Pll.PostDivShift) & POSTDIV_MASK);
-    Pcw &= GENMASK(Clock->Pll.PcwBits - 1, 0);
+    Pcw = (Pcw >> Clock->Pll.PcwShift) & GENMASK(Clock->Pll.PcwBits - 1, 0);
     PcwfBits = Clock->Pll.PcwBits - Clock->Pll.PcwiBits;
 
     // Get parent frequency
@@ -423,8 +511,9 @@ ClockGetFrequency(
     *Frequency = (Vco + PostDiv - 1) / PostDiv;
     *Frequency = ((*Frequency + 50000) / 100000) * 100000;
     return EFI_SUCCESS;
+  }
   case ClockTypeMux:
-  case ClockTypeMuxGate:
+  case ClockTypeMuxGate: {
     UINT32 Parent;
 
     // Get current parent
@@ -440,6 +529,7 @@ ClockGetFrequency(
     }
 
     return EFI_SUCCESS;
+  }
   case ClockTypeFactors:
     // Get parent frequency
     Status = ClockGetFrequency(Clock->Factor.Parent, Frequency);
@@ -468,7 +558,9 @@ ClockSetFrequency(
   EFI_STATUS Status;
   UINT32 Value;
   UINT32 PostDiv;
-  UINT32 Pcw;
+  UINT32 Pcw, PcwMask;
+  UINT32 PcwChgOffset;
+  EFI_TPL OldTpl;
 
   // Find Clock by Id
   CONST MTK_CLOCK_DESC *Clock = ClockGetById(ClockId);
@@ -482,15 +574,22 @@ ClockSetFrequency(
     return EFI_UNSUPPORTED;
   }
 
+  OldTpl = gBS->RaiseTPL (TPL_NOTIFY);
   // Calculate PLL values
   Status = PllCalcValues(Clock, Frequency, &Pcw, &PostDiv);
   if (EFI_ERROR (Status)) {
+    gBS->RestoreTPL (OldTpl);
     return Status;
   }
+
+  PcwChgOffset = Clock->Pll.PcwChgOffset ? Clock->Pll.PcwChgOffset : Clock->Pll.PostDivOffset;
 
   // Update PostDiv
   Value = ClockRead(Clock->Controller, Clock->Pll.PostDivOffset);
   Value &= ~(POSTDIV_MASK << Clock->Pll.PostDivShift);
+  if (PcwChgOffset == Clock->Pll.PostDivOffset) {
+    Value &= ~CON1_PCW_CHG;
+  }
   Value |= LowBitSet32(PostDiv) << Clock->Pll.PostDivShift;
 
   // If PostDiv offset matches Pcw offset it should be written only after PostDiv and Pcw bits are updated
@@ -500,12 +599,15 @@ ClockSetFrequency(
   }
 
   // Update Pcw
-  Value &= ~GENMASK(Clock->Pll.PcwShift + Clock->Pll.PcwBits - 1, Clock->Pll.PcwShift);
-  Value |= Pcw << Clock->Pll.PcwShift;
+  PcwMask = (UINT32)GENMASK(Clock->Pll.PcwBits - 1, 0);
+  Value &= ~(PcwMask << Clock->Pll.PcwShift);
+  Value |= (Pcw & PcwMask) << Clock->Pll.PcwShift;
   ClockWrite(Clock->Controller, Clock->Pll.PcwOffset, Value);
 
-  // Wait some time for PLL to stabilize after frequency change
+  Value = ClockRead(Clock->Controller, PcwChgOffset);
+  ClockWrite(Clock->Controller, PcwChgOffset, Value | CON1_PCW_CHG);
   MicroSecondDelay(20);
+  gBS->RestoreTPL (OldTpl);
 
   return EFI_SUCCESS;
 }
@@ -557,6 +659,7 @@ ClockSetParent(
   UINT32 Orig;
   UINTN Index;
   UINT32 Mask;
+  EFI_TPL OldTpl;
 
   // Find Clock by Id
   CONST MTK_CLOCK_DESC *Clock = ClockGetById(ClockId);
@@ -568,6 +671,14 @@ ClockSetParent(
   // Check if Clock is MuxGate or Mux
   if (Clock->Type != ClockTypeMuxGate && Clock->Type != ClockTypeMux) {
     return EFI_UNSUPPORTED;
+  }
+
+  if ((Clock->MuxGate.MuxWidth == 0) ||
+      (Clock->MuxGate.MuxShift >= 32) ||
+      (Clock->MuxGate.MuxWidth > 32 - Clock->MuxGate.MuxShift) ||
+      ((Clock->MuxGate.UpdateOffset != MAX_UINT32) &&
+       (Clock->MuxGate.UpdateShift >= 32))) {
+    return EFI_INVALID_PARAMETER;
   }
 
   // Generate mask
@@ -585,6 +696,7 @@ ClockSetParent(
     return EFI_INVALID_PARAMETER;
   }
 
+  OldTpl = gBS->RaiseTPL (TPL_NOTIFY);
   // Read Current Mux Value
   Orig = ClockRead(Clock->Controller, Clock->MuxGate.MuxOffset);
 
@@ -598,11 +710,12 @@ ClockSetParent(
     ClockWrite(Clock->Controller, Clock->MuxGate.SetOffset, Index << Clock->MuxGate.MuxShift);
 
     // Check if clock has update offset if so write it
-    if (Clock->MuxGate.UpdateOffset) {
+    if (Clock->MuxGate.UpdateOffset != MAX_UINT32) {
       ClockWrite(Clock->Controller, Clock->MuxGate.UpdateOffset, BIT(Clock->MuxGate.UpdateShift));
     }
   }
 
+  gBS->RestoreTPL (OldTpl);
   return EFI_SUCCESS;
 }
 
@@ -643,6 +756,18 @@ InitClockDriver (
   Status = LocateMemoryRegionByName ("Infra Cfg AO", &mClockControllersRegions[ClkInfraCfgAo]);
   if (EFI_ERROR (Status)) {
     DEBUG ((EFI_D_ERROR, "Failed to Locate Infra Cfg AO Memory Region! Status = %r\n", Status));
+    return Status;
+  }
+
+  Status = LocateOptionalClockControllerRegion ("I2C Wrap W", ClkImpIicWrapW);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((EFI_D_ERROR, "Failed to Locate I2C Wrap W Memory Region! Status = %r\n", Status));
+    return Status;
+  }
+
+  Status = LocateOptionalClockControllerRegion ("I2C Wrap C", ClkImpIicWrapC);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((EFI_D_ERROR, "Failed to Locate I2C Wrap C Memory Region! Status = %r\n", Status));
     return Status;
   }
 

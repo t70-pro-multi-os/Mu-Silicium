@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = MtkUfsPrm
+  FILE_GUID = 8B81C558-6F0C-47A0-9D6C-195930C4FD75
+  MODULE_TYPE = DXE_RUNTIME_DRIVER
+  VERSION_STRING = 1.0
+  ENTRY_POINT = MtkUfsPrmInitialize
+
+[Sources]
+  MtkUfsPrm.c
+  MtkPmicBroker.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  PrmPkg/PrmPkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+
+[LibraryClasses]
+  ArmSmcLib
+  BaseLib
+  BaseMemoryLib
+  IoLib
+  MtkUfsPowerCoreLib
+  SynchronizationLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Protocols]
+  gPrmConfigProtocolGuid ## PRODUCES
+  gMtkPmicRtcRuntimeProtocolGuid ## SOMETIMES_PRODUCES
+
+[Depex]
+  TRUE
+
+[BuildOptions]
+  MSFT:*_*_*_DLINK_FLAGS = /SUBSYSTEM:CONSOLE /ALIGN:0x10000
+  MSFT:*_*_*_GENFW_FLAGS = --keepoptionalheader --image-version $(VERSION_STRING)
+  CLANGPDB:*_*_*_DLINK_FLAGS = /SUBSYSTEM:CONSOLE /ALIGN:0x10000
+  CLANGPDB:*_*_*_GENFW_FLAGS = --keepoptionalheader --image-version $(VERSION_STRING)
+  GCC:*_*_*_GENFW_FLAGS = --prm --image-version $(VERSION_STRING)
+  GCC:*_*_*_OBJCOPY_STRIPFLAG ==

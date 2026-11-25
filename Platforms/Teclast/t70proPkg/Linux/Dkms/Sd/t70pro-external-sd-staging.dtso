@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/dts-v1/;
+/plugin/;
+/ {
+	fragment@0 {
+		target-path = "/soc/mmc@11240000";
+		__overlay__ {
+			compatible = "teclast,t70pro-mt6789-ext-sd";
+			status = "disabled";
+		};
+	};
+};

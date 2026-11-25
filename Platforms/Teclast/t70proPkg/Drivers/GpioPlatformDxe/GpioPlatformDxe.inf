@@ -1,0 +1,40 @@
+[Defines]
+  INF_VERSION = 0x00010019
+  BASE_NAME = T70GpioPlatformDxe
+  FILE_GUID = 079B4BD8-71EE-4AB7-9FB2-70B3C9A90D87
+  MODULE_TYPE = DXE_DRIVER
+  VERSION_STRING = 0.1
+  ENTRY_POINT = T70GpioPlatformEntry
+[Sources]
+  GpioPlatformDxe.c
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+[LibraryClasses]
+  BaseLib
+  SynchronizationLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DxeServicesTableLib
+  FdtLib
+  HimaxCoreLib
+  MtkDisplayCoreLib
+  MemoryAllocationLib
+  TimerLib
+  IoLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+[Protocols]
+  gEfiI2cMasterProtocolGuid
+  gMediaTekGpioProtocolGuid
+  gEfiAbsolutePointerProtocolGuid
+  gHimaxTouchBoardProtocolGuid
+  gMtkPanelBoardProtocolGuid
+  gMediaTekI2cControllerProtocolGuid
+[Guids]
+  gFdtTableGuid
+  gEfiEventExitBootServicesGuid
+[Depex]
+  gMediaTekGpioProtocolGuid

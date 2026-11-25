@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/dts-v1/;
+/plugin/;
+
+/ {
+	/* Only the touch controller's I2C adapter, never sibling adapters. */
+	fragment@0 {
+		target-path = "/soc/i2c@11e00000";
+		__overlay__ {
+			compatible = "teclast,t70pro-mt6983-i2c";
+		};
+	};
+};

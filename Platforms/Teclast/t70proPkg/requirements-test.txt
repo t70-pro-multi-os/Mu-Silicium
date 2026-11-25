@@ -1,0 +1,7 @@
+capstone==5.0.9
+unicorn==2.1.4
+vmlinux-to-elf==1.4.0
+lz4==4.4.5
+zstandard==0.25.0
+minilzo==1.2
+peewee==4.5.3

@@ -1,0 +1,48 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%Provider%
+DriverVer=11/19/2026,0.1.0.0
+CatalogFile=MtkThermal.cat
+PnpLockdown=1
+
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA6794
+
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkThermal.sys=1
+
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkThermal.sys
+[Install.NT.HW]
+AddReg=Security
+[Security]
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GR;;;BA)"
+[Install.NT.Services]
+AddService=MtkThermal,0x00000002,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\MtkThermal.sys
+
+[Install.NT.Wdf]
+KmdfService=MtkThermal,Wdf
+[Wdf]
+KmdfLibraryVersion=1.33
+
+[Strings]
+Provider="T70Pro Port Project"
+Description="MediaTek MT6789 temperature sensors"
+Disk="T70Pro ARM64 temperature driver"

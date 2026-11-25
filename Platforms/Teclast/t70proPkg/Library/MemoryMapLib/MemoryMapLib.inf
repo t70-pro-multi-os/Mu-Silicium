@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = T70ProMemoryMapLib
+  FILE_GUID = F7A50981-C20A-43B1-8100-D3C3C063D93E
+  MODULE_TYPE = BASE
+  VERSION_STRING = 0.1
+  LIBRARY_CLASS = MemoryMapLib
+[Sources]
+  MemoryMapLib.c
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+  ArmPkg/ArmPkg.dec
+  SiliciumPkg/SiliciumPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  ArmLib
+  BaseMemoryLib
+  FdtLib
+  MtkDisplayCoreLib
+  IoLib
+  ArmSmcLib
+  CacheMaintenanceLib

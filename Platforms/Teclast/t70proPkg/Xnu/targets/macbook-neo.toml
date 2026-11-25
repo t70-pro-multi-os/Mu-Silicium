@@ -1,0 +1,43 @@
+# macOS product goal; hardware remains the T70PRO MT6789 board.
+[product]
+name = "MacBook Neo"
+identifier = "Mac17,5"
+device_class = "j700ap"
+target_type = "J700"
+target_sub_type = "J700AP"
+
+[hardware]
+board_target = "T70PRO"
+soc = "mediatek,mt6789"
+kernel_arch = "arm64"
+
+[ipsw]
+url = "https://updates.cdn-apple.com/2026FallFCS/c202a724-db7e-4d56-917b-110aa0226507/UniversalMac_27.2.1_26B131_Restore.ipsw"
+product = "Mac17,5"
+version = "27.2.1"
+build = "26B131"
+device_class = "j700ap"
+chip_id = 33088
+board_id = 100
+manifest_sha256 = "45be69d19a69efd09e7ccf75664e524117604dc8257a4e1a03e6462f952face2"
+
+[ipsw.sha256]
+"DeviceTree.j700ap.im4p" = "651c0369ab16494c39023d9b43a8ccd0ae006b914648ba864a39527a57d27335"
+"141-12228-174.dmg.aea.trustcache" = "5b2c9a60d3f6bbe986dd186d01eea7b8c11b5af8776d70a5ac65fb38b51725d2"
+"kernelcache.release.mac17p" = "0a91467f2b68c145d4831a13c34d6e363a5f1dbe41d148e09fb4505eecfe6916"
+
+[kernel.prelink]
+kernelcache_sha256 = "590fd681be5fc84dd859750cbe0aea0cd917960a65f61a5ae6fe9b3635db5bf8"
+
+[reference]
+device_tree_sha256 = "0919f5c955aaf7634bea42d3f4671363b43ae7ecd01e010b6a986aee0568f885"
+kernel_arch = "arm64e"
+darwin_version = "27.2.0"
+xnu_version = "13432.41.4"
+specs = "https://www.apple.com/macbook-neo/specs/"
+
+[bootstrap]
+darwin_version = "23.6.0"
+xnu_version = "10063.141.1"
+compiler_target = "arm64-apple-macos14.0"
+target_os_runtime_qualified = false

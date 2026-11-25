@@ -1,0 +1,15 @@
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = MtkUfsCoreLib
+  FILE_GUID = 6F2B9D8E-87D8-4D48-BBCE-45B0E6EBD01C
+  MODULE_TYPE = BASE
+  VERSION_STRING = 0.1
+  LIBRARY_CLASS = MtkUfsCoreLib
+
+[Sources]
+  MtkUfsCore.c
+  MtkUfsPlatform.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec

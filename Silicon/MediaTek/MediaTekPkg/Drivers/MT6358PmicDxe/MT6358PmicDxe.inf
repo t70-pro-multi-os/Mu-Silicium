@@ -19,10 +19,12 @@
   UefiBootServicesTableLib
   UefiDriverEntryPoint
   DebugLib
+  TimerLib
+  SynchronizationLib
 
 [Protocols]
   gMediaTekPmicWrapperProtocolGuid
   gMediaTekPmicProtocolGuid
 
 [Depex]
-  TRUE
+  gMediaTekPmicWrapperProtocolGuid

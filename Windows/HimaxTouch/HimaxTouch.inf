@@ -1,0 +1,43 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=HIDClass
+ClassGuid={745A17A0-74D3-11D0-B6FE-00A0C90F57DA}
+Provider=%Provider%
+DriverVer=11/09/2026,0.1.0.0
+CatalogFile=HimaxTouch.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA8313
+[Install.NT.HW]
+AddReg=HimaxTouch_Inst.NT.HW.AddReg
+[HimaxTouch_Inst.NT.HW.AddReg]
+HKR,,"LowerFilters",0x00010008,"vhf"
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+HimaxTouch.sys=1
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+HimaxTouch.sys
+[Install.NT.Services]
+AddService=HimaxTouch,0x00000002,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\HimaxTouch.sys
+[Install.NT.Wdf]
+KmdfService=HimaxTouch,Wdf
+[Wdf]
+KmdfLibraryVersion=1.33
+[Strings]
+Provider="T70Pro Port Project"
+Description="Himax HX83132 ten-contact touch input (experimental)"
+Disk="T70Pro ARM64 Himax input driver"

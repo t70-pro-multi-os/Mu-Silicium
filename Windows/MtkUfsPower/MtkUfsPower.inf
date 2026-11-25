@@ -1,0 +1,40 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=Extension
+ClassGuid={e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+ExtensionId={a9de8512-55ce-4a61-ab3f-6f8cc0b25470}
+Provider=%Provider%
+DriverVer=11/24/2026,0.2.1.0
+CatalogFile=MtkUfsPower.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA678B
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkUfsPower.sys=1
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkUfsPower.sys
+[Install.NT.Services]
+AddService=MtkUfsPower,0,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=0
+ErrorControl=1
+ServiceBinary=%13%\MtkUfsPower.sys
+[Install.NT.Filters]
+AddFilter=MtkUfsPower,,UfsPowerFilter
+[UfsPowerFilter]
+FilterPosition=Upper
+[Strings]
+Provider="T70Pro Port Project"
+Description="MT6789 UFS runtime power filter (experimental)"
+Disk="T70Pro ARM64 UFS power filter"

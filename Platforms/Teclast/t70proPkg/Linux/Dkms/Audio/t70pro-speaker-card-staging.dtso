@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/dts-v1/;
+/plugin/;
+/ {
+	fragment@0 {
+		target-path = "/";
+		__overlay__ {
+			teclast-speaker-card {
+				compatible = "teclast,t70pro-aw88261-speaker";
+				teclast,afe = <&afe>;
+				teclast,amps = <&aw882xx_smartpa_0 &aw882xx_smartpa_1>;
+				status = "disabled";
+			};
+		};
+	};
+};

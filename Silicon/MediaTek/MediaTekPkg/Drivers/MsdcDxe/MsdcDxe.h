@@ -25,10 +25,12 @@
 #include <Library/MsdcImplLib.h>
 
 #include <Protocol/SdMmcPassThru.h>
+#include <Protocol/MsdcDiagnostics.h>
 #include <Protocol/ComponentName.h>
 #include <Protocol/ComponentName2.h>
 #include <Protocol/DriverBinding.h>
 #include <Protocol/DevicePath.h>
+#include <Guid/EventGroup.h>
 
 #include <IndustryStandard/Sd.h>
 #include <IndustryStandard/Emmc.h>
@@ -218,7 +220,7 @@ typedef enum {
 } SD_MCC_CARD_TYPE;
 
 typedef struct {
-  UINT32 Lba;
+  UINT64 LastBlock;
   SD_MCC_CARD_TYPE CardType;
 } SD_INFO;
 
@@ -235,6 +237,26 @@ typedef struct {
 
   MSDC_HOST_DATA  HostData;
   SD_INFO         SdInfo;
+  UINT64 StartNs;
+  UINT64 TimeoutNs;
+  EFI_EVENT ConnectEvent;
+  EFI_EVENT ExitEvent;
+  BOOLEAN MediaReady;
+  // The pass-through has announced a media identity to the driver model.
+  BOOLEAN MediaAnnounced;
+  // Do not identify another card until the previous slot child is gone.
+  BOOLEAN ChildWithdrawalPending;
+  // Reinstall succeeded or was attempted, but a usable child is unconfirmed.
+  BOOLEAN ChildConnectionPending;
+  BOOLEAN Initializing;
+  BOOLEAN CommandActive;
+  BOOLEAN PollActive;
+  BOOLEAN Stopped;
+  UINT8 StableSamples;
+  UINT8 ChildRetryCountdown;
+  UINT8 ChildRetryDelay;
+  UINT8 IdentifyRetryCountdown;
+  UINT8 IdentifyRetryDelay;
 } MSDC_PRIVATE_DATA;
 
 typedef

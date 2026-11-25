@@ -1,0 +1,15 @@
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = MusbHostCoreLib
+  FILE_GUID = 70C2E8F4-AC50-4A2B-BE8B-9B9F2DAF716A
+  MODULE_TYPE = BASE
+  VERSION_STRING = 0.1
+  LIBRARY_CLASS = MusbHostCoreLib
+[Sources]
+  MusbHostCore.c
+  MtkUsbPhyCore.c
+  MtkUsbHubCore.c
+  MtkMusbPlatformCore.c
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec

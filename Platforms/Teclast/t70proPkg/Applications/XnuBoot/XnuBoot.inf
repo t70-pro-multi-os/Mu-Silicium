@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = T70XnuBoot
+  FILE_GUID = 3b61b2cb-908a-4278-b03b-a8c1fe256ee6
+  MODULE_TYPE = UEFI_APPLICATION
+  VERSION_STRING = 0.1
+  ENTRY_POINT = UefiMain
+[Sources]
+  XnuBoot.c
+  XnuPlatform.c
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  ArmPkg/ArmPkg.dec
+  SiliciumPkg/SiliciumPkg.dec
+  UniXNUPkg/UniXNUPkg.dec
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiBootServicesTableLib
+  UefiLib
+  BaseLib
+  BaseMemoryLib
+  ArmLib
+  ArmGenericTimerCounterLib
+  DevicePathLib
+  FdtLib
+  IoLib
+  MemoryAllocationLib
+  MemoryMapLib
+[Protocols]
+  gEfiBlockIoProtocolGuid
+  gEfiGraphicsOutputProtocolGuid
+  gEfiLoadedImageProtocolGuid
+  gEfiSimpleFileSystemProtocolGuid
+  gUniXNULoaderProtocolGuid
+[Guids]
+  gEfiEventExitBootServicesGuid
+  gFdtTableGuid
+[BuildOptions]
+  *_CLANGPDB_*_CC_FLAGS = -I$(WORKSPACE)/../xnu-sources/DarwinBoot

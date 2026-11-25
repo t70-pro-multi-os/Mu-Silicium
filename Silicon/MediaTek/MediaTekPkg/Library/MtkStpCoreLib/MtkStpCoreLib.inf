@@ -1,0 +1,20 @@
+[Defines]
+  INF_VERSION = 0x00010019
+  BASE_NAME = MtkStpCoreLib
+  FILE_GUID = A23E07AD-A021-4697-BBA3-33D453FD1FC2
+  MODULE_TYPE = BASE
+  LIBRARY_CLASS = MtkStpCoreLib
+[Sources]
+  MtkStpCore.c
+  MtkStpFull.c
+  MtkWmtMode.c
+  MtkBtifCore.c
+  MtkConnPower.c
+  MtkConnRom.c
+  MtkConnBoot.c
+  MtkConnRails.c
+  MtkVcn28Core.c
+  MtkGnssCore.c
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec

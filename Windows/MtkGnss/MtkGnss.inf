@@ -1,0 +1,46 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%Provider%
+DriverVer=11/11/2026,0.1.0.0
+CatalogFile=MtkGnss.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+; Child PDO ID must be supplied by the real conninfra/receiver bus owner.
+; Deliberately no Root device and no fabricated ACPI-ready flag.
+%Description%=Install,MTK\MT6789_GNSS
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkGnss.dll=1
+[DriverCopy]
+MtkGnss.dll
+[Install.NT]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT
+CopyFiles=DriverCopy
+[Install.NT.HW]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT.HW
+AddReg=DeviceSecurity
+[DeviceSecurity]
+HKR,,Security,0x00000000,"D:P(A;;GA;;;SY)"
+[Install.NT.Services]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT.Services
+[Install.NT.Wdf]
+UmdfService=MtkGnss,Umdf
+UmdfServiceOrder=MtkGnss
+[Umdf]
+UmdfLibraryVersion=2.33
+ServiceBinary=%13%\MtkGnss.dll
+[Strings]
+Provider="T70Pro Port Project"
+Description="MT6789 GNSS location adapter"
+Disk="T70Pro ARM64 GNSS driver"

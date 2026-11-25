@@ -1,0 +1,69 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+; Development binding: StartDevice intentionally returns DEVICE_NOT_READY.
+; Topology/physical-link code exists, but physical admission still blocks startup.
+; No installation/signing, working endpoint or live-device validation claimed.
+[Version]
+Signature="$WINDOWS NT$"
+Class=MEDIA
+ClassGuid={4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider=%Provider%
+DriverVer=11/18/2026,0.1.0.0
+CatalogFile=MtkAudio.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA6793
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkAudio.sys=1
+[Install.NT]
+Include=ks.inf,wdmaudio.inf
+Needs=KS.Registration,WDMAUDIO.Registration
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkAudio.sys
+[Install.NT.Interfaces]
+AddInterface=%AudioCategory%,T70Wave,WaveInterface
+AddInterface=%RenderCategory%,T70Wave,WaveInterface
+AddInterface=%AudioCategory%,T70Topology,TopologyInterface
+AddInterface=%TopologyCategory%,T70Topology,TopologyInterface
+[WaveInterface]
+AddReg=WaveInterface.Reg
+[WaveInterface.Reg]
+HKR,,CLSID,,%KsProxy%
+HKR,,FriendlyName,,"T70 Wave (development)"
+[TopologyInterface]
+AddReg=TopologyInterface.Reg
+[TopologyInterface.Reg]
+HKR,,CLSID,,%KsProxy%
+HKR,,FriendlyName,,"T70 Speakers (development)"
+HKR,EP\0,%EndpointAssociation%,,%SpeakerCategory%
+; No event-driven/pull-mode, jack presence or hardware-volume claim.
+[Install.NT.Services]
+AddService=MtkAudio,0x00000002,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\MtkAudio.sys
+[Install.NT.Wdf]
+KmdfService=MtkAudio,Wdf
+[Wdf]
+; Target ABI; the official range build embeds minimum runtime 1.33.
+KmdfLibraryVersion=1.35
+[Strings]
+Provider="T70Pro Port Project"
+Description="T70 AFE development binding (playback unavailable)"
+Disk="T70Pro ARM64 audio development driver"
+
+AudioCategory="{6994AD04-93EF-11D0-A3CC-00A0C9223196}"
+RenderCategory="{65E8773E-8F56-11D0-A3B9-00A0C9223196}"
+TopologyCategory="{DDA54A40-1E4C-11D1-A050-405705C10000}"
+KsProxy="{17CCA71B-ECD7-11D0-B908-00A0C9223196}"
+EndpointAssociation="{1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E},2"
+SpeakerCategory="{DFF21CE1-F70F-11D0-B917-00A0C9223196}"

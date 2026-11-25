@@ -5,6 +5,8 @@ typedef enum {
   ClkApMixed,
   ClkTopCkGen,
   ClkInfraCfgAo,
+  ClkImpIicWrapW,
+  ClkImpIicWrapC,
   ClkMax,
 } MTK_CLOCK_CONTROLLER_TYPE;
 
@@ -60,6 +62,16 @@ typedef struct {
   UINT8  PcwiBits;
 
   UINT32 Parent;
+
+  // A separate gate may share the power register rather than CON0. When
+  // EnableMask is nonzero, EnMask describes additional bits at EnableOffset.
+  // Zero keeps the legacy CON0/EnMask gate representation.
+  UINT32 EnableOffset;
+  UINT32 EnableMask;
+  UINT32 TunerEnableOffset;
+  UINT32 TunerEnableMask;
+  // Optional register offset for CON1_PCW_CHG when distinct from PostDivOffset.
+  UINT32 PcwChgOffset;
 } MTK_PLL_DESC;
 
 typedef struct {

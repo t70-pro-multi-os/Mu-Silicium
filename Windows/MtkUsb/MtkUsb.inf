@@ -1,0 +1,41 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=USB
+ClassGuid={36fc9e60-c465-11cf-8056-444553540000}
+Provider=%Provider%
+DriverVer=11/25/2026,0.2.9.0
+CatalogFile=MtkUsb.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...22621
+[Models.NTarm64.10.0...22621]
+%Description%=Install,ACPI\HANA678D
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkUsb.sys=1
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkUsb.sys
+[Install.NT.Services]
+AddService=MtkUsb,0x00000002,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+BootFlags=0x80
+ErrorControl=1
+ServiceBinary=%13%\MtkUsb.sys
+Dependencies=ucx01000
+[Install.NT.Wdf]
+KmdfService=MtkUsb,Wdf
+[Wdf]
+KmdfLibraryVersion=1.33
+[Strings]
+Provider="T70Pro Port Project"
+Description="MediaTek MT6789 USB 2.0 host controller"
+Disk="T70Pro ARM64 USB controller driver"

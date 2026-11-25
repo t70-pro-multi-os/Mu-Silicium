@@ -1,0 +1,36 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+; Exact ACPI device only; offline unsigned development package.
+[Version]
+Signature="$Windows NT$"
+Class=Display
+ClassGUID={4d36e968-e325-11ce-bfc1-08002be10318}
+Provider=%Provider%
+DriverVer=11/10/2026,0.1.0.0
+CatalogFile=MtkDisplay.cat
+PnpLockdown=1
+[DestinationDirs]
+DriverFiles=12
+[SourceDisksNames]
+1=%Disk%
+[SourceDisksFiles]
+MtkDisplay.sys=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Device%=Install,ACPI\HANA678C
+[Install.NT]
+FeatureScore=F9
+CopyFiles=DriverFiles
+[Install.NT.Services]
+AddService=MtkDisplay,0x2,Service
+[Service]
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%12%\MtkDisplay.sys
+[DriverFiles]
+MtkDisplay.sys
+[Strings]
+Provider="T70Pro Port Project"
+Device="T70Pro inherited framebuffer display"
+Disk="T70Pro Display Driver"

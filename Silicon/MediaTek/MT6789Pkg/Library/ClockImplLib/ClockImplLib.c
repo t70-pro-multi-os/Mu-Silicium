@@ -236,6 +236,9 @@ typedef enum {
   IFRAO_SPI7_CK,
   IFRAO_66MP_BUS_MCLK_CKP,
   IFRAO_AP_DMA,
+  IMPW_AP_CLOCK_I2C0,
+  IMPC_AP_CLOCK_I2C6,
+  IMPW_AP_CLOCK_I2C1,
   MAX_CLOCK_ID,
 } MT6789_CLOCK_ID;
 
@@ -799,7 +802,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x208,
       .PowerOffset   = 0x214,
-      .EnMask        = BIT0,
+      .EnMask        = 0x00000000U,
       .ResetBarMask  = 0,
 
       .PostDivOffset = 0x20C,
@@ -813,6 +816,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x208,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -824,7 +829,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x218,
       .PowerOffset   = 0x224,
-      .EnMask        = BIT0,
+      .EnMask        = 0x00000000U,
       .ResetBarMask  = 0,
 
       .PostDivOffset = 0x21C,
@@ -838,6 +843,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x218,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -849,7 +856,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x258,
       .PowerOffset   = 0x264,
-      .EnMask        = BIT0,
+      .EnMask        = 0x00000000U,
       .ResetBarMask  = 0,
 
       .PostDivOffset = 0x25C,
@@ -863,6 +870,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x258,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -874,7 +883,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x390,
       .PowerOffset   = 0x39C,
-      .EnMask        = BIT0,
+      .EnMask        = 0x00000000U,
       .ResetBarMask  = 0,
 
       .PostDivOffset = 0x394,
@@ -888,6 +897,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x390,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -899,7 +910,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x340,
       .PowerOffset   = 0x34C,
-      .EnMask        = BIT0,
+      .EnMask        = 0xFF000000U,
       .ResetBarMask  = BIT23,
 
       .PostDivOffset = 0x344,
@@ -913,6 +924,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x340,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -924,7 +937,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x308,
       .PowerOffset   = 0x314,
-      .EnMask        = BIT0,
+      .EnMask        = 0xFF000000U,
       .ResetBarMask  = BIT23,
 
       .PostDivOffset = 0x30C,
@@ -938,6 +951,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x308,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -949,7 +964,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x350,
       .PowerOffset   = 0x35C,
-      .EnMask        = BIT0,
+      .EnMask        = 0x00000000U,
       .ResetBarMask  = 0,
 
       .PostDivOffset = 0x354,
@@ -963,6 +978,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x350,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -974,7 +991,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x360,
       .PowerOffset   = 0x36C,
-      .EnMask        = BIT0,
+      .EnMask        = 0xFF000000U,
       .ResetBarMask  = BIT23,
 
       .PostDivOffset = 0x364,
@@ -988,6 +1005,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x360,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -999,7 +1018,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x3B4,
       .PowerOffset   = 0x3C0,
-      .EnMask        = BIT0,
+      .EnMask        = 0xFF000000U,
       .ResetBarMask  = 0,
 
       .PostDivOffset = 0x3B8,
@@ -1013,6 +1032,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x3B4,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -1024,7 +1045,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x268,
       .PowerOffset   = 0x274,
-      .EnMask        = BIT0,
+      .EnMask        = 0x00000000U,
       .ResetBarMask  = 0,
 
       .PostDivOffset = 0x26C,
@@ -1038,6 +1059,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x268,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -1049,7 +1072,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x380,
       .PowerOffset   = 0x38C,
-      .EnMask        = BIT0,
+      .EnMask        = 0x00000000U,
       .ResetBarMask  = 0,
 
       .PostDivOffset = 0x384,
@@ -1063,6 +1086,8 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x380,
+      .EnableMask    = 0x1U,
     },
   },
   {
@@ -1074,7 +1099,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x318,
       .PowerOffset   = 0x328,
-      .EnMask        = BIT0,
+      .EnMask        = 0x00000000U,
       .ResetBarMask  = 0,
 
       .PostDivOffset = 0x31C,
@@ -1088,6 +1113,10 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 32,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x318,
+      .EnableMask    = 0x1U,
+      .TunerEnableOffset = 0x0CU,
+      .TunerEnableMask = BIT0,
     },
   },
   {
@@ -1099,7 +1128,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x32C,
       .PowerOffset   = 0x33C,
-      .EnMask        = BIT0,
+      .EnMask        = 0x00000000U,
       .ResetBarMask  = 0,
 
       .PostDivOffset = 0x330,
@@ -1113,6 +1142,10 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 32,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x32C,
+      .EnableMask    = 0x1U,
+      .TunerEnableOffset = 0x0CU,
+      .TunerEnableMask = BIT5,
     },
   },
   {
@@ -1124,7 +1157,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .BaseOffset    = 0x3C4,
       .PowerOffset   = 0x3CC,
-      .EnMask        = BIT0,
+      .EnMask        = 0x00000000U,
       .ResetBarMask  = BIT23,
 
       .PostDivOffset = 0x3C4,
@@ -1138,6 +1171,9 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .PcwBits       = 22,
       .PcwiBits      = 8,
       .Parent        = TOP_CLK26M,
+      .EnableOffset  = 0x3CC,
+      .EnableMask    = 0x4U,
+      .PcwChgOffset  = 0x3C8,
     },
   },
 
@@ -2645,7 +2681,7 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
     {
       .Parent = APMIXED_MMPLL,
       .Mult   = 1,
-      .Div    = 12,
+      .Div    = 10,
     }
   },
   {
@@ -4041,6 +4077,48 @@ MTK_CLOCK_DESC gClocks[MAX_CLOCK_ID] = {
       .StatusOffset = 0xd8,
       .GateShift    = 31,
       .Parent       = TOP_APDMA,
+    }
+  },
+  {
+    .Id   = IMPW_AP_CLOCK_I2C0,
+    .Name = "IMPW_AP_CLOCK_I2C0",
+    .Controller = ClkImpIicWrapW,
+    .Type = ClockTypeGate,
+    .Gate =
+    {
+      .SetOffset    = 0xE08,
+      .ClearOffset  = 0xE04,
+      .StatusOffset = 0xE00,
+      .GateShift    = 0,
+      .Parent       = TOP_I2C_PSEUDO,
+    }
+  },
+  {
+    .Id   = IMPC_AP_CLOCK_I2C6,
+    .Name = "IMPC_AP_CLOCK_I2C6",
+    .Controller = ClkImpIicWrapC,
+    .Type = ClockTypeGate,
+    .Gate =
+    {
+      .SetOffset    = 0xE08,
+      .ClearOffset  = 0xE04,
+      .StatusOffset = 0xE00,
+      .GateShift    = 2,
+      .Parent       = TOP_I2C_PSEUDO,
+    }
+  },
+  {
+    .Id   = IMPW_AP_CLOCK_I2C1,
+    .Name = "IMPW_AP_CLOCK_I2C1",
+    .Controller = ClkImpIicWrapW,
+    .Type = ClockTypeGate,
+    .Gate =
+    {
+      .SetOffset    = 0xE08,
+      .ClearOffset  = 0xE04,
+      .StatusOffset = 0xE00,
+      .GateShift    = 1,
+      .Parent       = TOP_I2C_PSEUDO,
     }
   },
 };

@@ -9,3 +9,7 @@ BootShim.elf
 
 Mu-*.*
 *:Zone.Identifier
+
+# Local build logs and the Teclast boot logo (not redistributed)
+FMMT_Build.log
+Platforms/Teclast/t70proPkg/Drivers/T70PlatformLogoDxe/Logo.bmp

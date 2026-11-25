@@ -1,0 +1,36 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=SCSIAdapter
+ClassGuid={4D36E97B-E325-11CE-BFC1-08002BE10318}
+Provider=%Provider%
+DriverVer=11/24/2026,0.2.2.0
+CatalogFile=MtkUfs.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA678B
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkUfs.sys=1
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkUfs.sys
+[Install.NT.Services]
+AddService=MtkUfs,0x00000002,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=0
+ErrorControl=1
+ServiceBinary=%13%\MtkUfs.sys
+LoadOrderGroup=SCSI Miniport
+[Strings]
+Provider="T70Pro Port Project"
+Description="MT6789 initial-D0 UFS storage (experimental)"
+Disk="T70Pro ARM64 UFS driver"

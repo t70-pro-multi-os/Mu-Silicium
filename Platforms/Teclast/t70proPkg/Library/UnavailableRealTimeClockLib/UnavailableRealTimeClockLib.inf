@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = T70BootReadRealTimeClockLib
+  FILE_GUID = BA032CC0-8B5E-4E81-A479-0B34B12D4910
+  MODULE_TYPE = BASE
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS = RealTimeClockLib|DXE_RUNTIME_DRIVER UEFI_APPLICATION
+[Sources]
+  UnavailableRealTimeClockLib.c
+  StockRtcRead.h
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+[LibraryClasses]
+  BaseMemoryLib
+  DxeServicesTableLib
+  FdtLib
+  TimerLib
+[Guids]
+  gEfiRtPropertiesTableGuid
+  gFdtTableGuid
+  gEfiEventExitBootServicesGuid
+  gEfiEventReadyToBootGuid
+  gEfiEventBeforeExitBootServicesGuid
+  gEfiEventVirtualAddressChangeGuid
+
+[Protocols]
+  gMediaTekPmicWrapperProtocolGuid ## SOMETIMES_CONSUMES
+  gMtkPmicRtcRuntimeProtocolGuid ## SOMETIMES_CONSUMES

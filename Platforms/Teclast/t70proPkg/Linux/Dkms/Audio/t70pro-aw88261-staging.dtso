@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/dts-v1/;
+/plugin/;
+
+/ {
+	/* Explicitly inactive until I2C1, AFE, and speaker supplies are verified. */
+	fragment@0 {
+		target-path = "/soc/i2c@11e01000/aw882xx@34";
+		__overlay__ {
+			compatible = "awinic,aw88261";
+			awinic,audio-channel = <0>;
+			sound-name-prefix = "T70 Amp 0";
+			status = "disabled";
+		};
+	};
+	fragment@1 {
+		target-path = "/soc/i2c@11e01000/aw882xx@35";
+		__overlay__ {
+			compatible = "awinic,aw88261";
+			awinic,audio-channel = <1>;
+			sound-name-prefix = "T70 Amp 1";
+			status = "disabled";
+		};
+	};
+};

@@ -1,0 +1,47 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=SDHost
+ClassGuid={a0a588a4-c46f-4b37-b7ea-c82fe89870c6}
+Provider=%Provider%
+DriverVer=11/22/2026,0.2.1.0
+CatalogFile=MtkSd.cat
+PnpLockdown=1
+
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA6792
+
+[DestinationDirs]
+DriverCopy=13
+
+[SourceDisksNames]
+1=%Disk%,,,
+
+[SourceDisksFiles]
+MtkSd.sys=1
+
+[Install.NT]
+CopyFiles=DriverCopy
+
+[DriverCopy]
+MtkSd.sys
+
+[Install.NT.Services]
+AddService=MtkSd,0x00000002,Service
+
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+BootFlags=0x88
+ErrorControl=1
+ServiceBinary=%13%\MtkSd.sys
+LoadOrderGroup=System Bus Extender
+
+[Strings]
+Provider="T70Pro Port Project"
+Description="MT6789 microSD host (read-only)"
+Disk="T70Pro ARM64 microSD host"

@@ -1,0 +1,48 @@
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = MtkUfsHandoffDxe
+  FILE_GUID                      = D3D9BC52-8013-4D4E-A95A-4E01B27E9201
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = MtkUfsHandoffEntryPoint
+
+[Sources]
+  MtkUfsHandoffDxe.c
+  MtkUfsColdHost.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  ArmSmcLib
+  ArmLib
+  TimerLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DebugLib
+  DxeServicesTableLib
+  MemoryAllocationLib
+  IoLib
+  FdtLib
+  UefiBootServicesTableLib
+  UefiLib
+  UefiDriverEntryPoint
+  MtkUfsCoreLib
+
+[Guids]
+  gFdtTableGuid
+  gEfiEndOfDxeEventGroupGuid
+  gEfiEventExitBootServicesGuid
+  gEfiEventReadyToBootGuid
+
+[Protocols]
+  gEfiUfsDeviceConfigProtocolGuid            ## CONSUMES
+  gMediaTekClockProtocolGuid                 ## CONSUMES
+  gMediaTekPmicProtocolGuid                  ## CONSUMES
+  gEfiDevicePathProtocolGuid                 ## PRODUCES CONSUMES
+  gEfiDriverBindingProtocolGuid              ## PRODUCES
+  gEdkiiUfsHostControllerProtocolGuid        ## PRODUCES
+  gEdkiiUfsHcPlatformProtocolGuid            ## PRODUCES

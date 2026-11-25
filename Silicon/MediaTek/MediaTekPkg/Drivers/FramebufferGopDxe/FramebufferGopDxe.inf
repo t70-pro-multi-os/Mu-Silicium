@@ -1,0 +1,41 @@
+[Defines]
+  INF_VERSION                    = 0x00010019
+  BASE_NAME                      = FramebufferGopDxe
+  FILE_GUID                      = 191B3D9A-6219-4BE0-A708-6043A2EC09D7
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = FramebufferGopEntry
+
+[Sources]
+  FramebufferGopDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  CacheMaintenanceLib
+  IoLib
+  BaseMemoryLib
+  DebugLib
+  DxeServicesTableLib
+  FdtLib
+  MemoryAllocationLib
+  MtkDisplayCoreLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Protocols]
+  gEfiGraphicsOutputProtocolGuid
+  gEfiDevicePathProtocolGuid
+
+[Guids]
+  gEfiEventExitBootServicesGuid
+  gFdtTableGuid
+  gEfiEndOfDxeEventGroupGuid
+  gEfiEventReadyToBootGuid
+
+[Depex]
+  TRUE

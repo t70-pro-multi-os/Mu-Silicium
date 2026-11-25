@@ -1,0 +1,29 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    /* Generic Linux candidate only. The matching native provider must exist. */
+    fragment@0 {
+        #address-cells = <2>;
+        #size-cells = <2>;
+        target-path = "/soc/pinctrl";
+        __overlay__ {
+            compatible = "teclast,t70pro-mt6789-pinctrl";
+            reg = <0 0x10005000 0 0x1000>, <0 0x11c30000 0 0x1000>,
+                  <0 0x11d10000 0 0x1000>, <0 0x11d40000 0 0x1000>,
+                  <0 0x11e20000 0 0x1000>, <0 0x11e60000 0 0x1000>,
+                  <0 0x11ea0000 0 0x1000>, <0 0x1000b000 0 0x1000>;
+            reg-names = "gpio", "iocfg_rb", "iocfg_bm", "iocfg_br",
+                        "iocfg_lm", "iocfg_bl", "iocfg_rt", "eint";
+            interrupt-parent = <&gic>;
+            interrupts = <0 244 4 0>;
+        };
+    };
+
+    fragment@1 {
+        target-path = "/soc/apirq@1000b000";
+        __overlay__ {
+            status = "disabled";
+        };
+    };
+};

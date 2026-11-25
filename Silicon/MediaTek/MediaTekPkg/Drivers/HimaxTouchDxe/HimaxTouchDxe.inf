@@ -1,0 +1,35 @@
+[Defines]
+  INF_VERSION = 0x00010019
+  BASE_NAME = HimaxTouchDxe
+  FILE_GUID = B8313276-C282-49A6-A6D0-58A2B10DA190
+  MODULE_TYPE = DXE_DRIVER
+  VERSION_STRING = 0.1
+  ENTRY_POINT = HimaxEntry
+[Sources]
+  HimaxTouchDxe.c
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  HimaxCoreLib
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+  TimerLib
+[Protocols]
+  gEfiI2cMasterProtocolGuid
+  gMediaTekI2cExclusiveProtocolGuid
+  gEfiDriverBindingProtocolGuid
+  gEfiDevicePathProtocolGuid
+  gEfiAbsolutePointerProtocolGuid
+  gMediaTekGpioProtocolGuid
+  gHimaxTouchBoardProtocolGuid
+  gHimaxTouchControlProtocolGuid
+[Guids]
+  gEfiEventExitBootServicesGuid
+[Depex]
+  gMediaTekGpioProtocolGuid

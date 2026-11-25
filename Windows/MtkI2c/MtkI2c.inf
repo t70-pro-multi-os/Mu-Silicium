@@ -1,0 +1,40 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%Provider%
+DriverVer=11/23/2026,0.1.2.0
+CatalogFile=MtkI2c.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...22621
+[Models.NTarm64.10.0...22621]
+%Description%=Install,ACPI\HANA6789
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkI2c.sys=1
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkI2c.sys
+[Install.NT.Services]
+AddService=MtkI2c,0x00000002,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+BootFlags=0x80
+ErrorControl=1
+ServiceBinary=%13%\MtkI2c.sys
+[Install.NT.Wdf]
+KmdfService=MtkI2c,Wdf
+[Wdf]
+KmdfLibraryVersion=1.33
+[Strings]
+Provider="T70Pro Port Project"
+Description="MT6983-compatible I2C controller (experimental)"
+Disk="T70Pro ARM64 I2C driver"

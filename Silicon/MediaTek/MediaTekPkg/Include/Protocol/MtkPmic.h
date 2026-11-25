@@ -70,6 +70,10 @@ EFI_STATUS
   );
 
 //
+// Regulator methods serialize the complete register sequence, including rollback.
+// A concurrent/reentrant method returns EFI_NOT_READY without register accesses
+// or output changes; retry only after the current operation has completed.
+// This does not serialize callers of the separate raw PMIC wrapper protocol.
 // Define Protocol Functions
 //
 struct _MTK_PMIC_PROTOCOL {

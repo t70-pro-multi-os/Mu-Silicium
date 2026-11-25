@@ -1,0 +1,36 @@
+[Defines]
+  INF_VERSION = 0x00010019
+  BASE_NAME = I2cDxe
+  FILE_GUID = 95B08F94-FD69-4292-AD3B-4678CE62EBEB
+  MODULE_TYPE = DXE_DRIVER
+  VERSION_STRING = 0.1
+  ENTRY_POINT = I2cEntry
+[Sources]
+  I2cDxe.c
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  DmaLib
+  DxeServicesTableLib
+  IoLib
+  MemoryAllocationLib
+  MtkI2cCoreLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+[Protocols]
+  gEfiI2cMasterProtocolGuid
+  gMediaTekI2cExclusiveProtocolGuid
+  gEfiDriverBindingProtocolGuid
+  gMediaTekI2cControllerProtocolGuid
+[Guids]
+  gEfiEventExitBootServicesGuid
+[Depex]
+  TRUE

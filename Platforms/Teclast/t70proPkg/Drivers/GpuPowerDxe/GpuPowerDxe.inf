@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION                    = 0x00010019
+  BASE_NAME                      = GpuPowerDxe
+  FILE_GUID                      = F98D2F01-9ACC-418D-A230-53AC3FF7288C
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = GpuPowerDxeEntryPoint
+
+[Sources]
+  GpuPowerDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  CacheMaintenanceLib
+  DebugLib
+  DxeServicesTableLib
+  IoLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Protocols]
+  gMediaTekPmicProtocolGuid ## SOMETIMES_CONSUMES
+
+[Guids]
+  gEfiEventReadyToBootGuid
+
+[Depex]
+  TRUE

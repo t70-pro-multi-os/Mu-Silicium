@@ -39,6 +39,7 @@ typedef struct _KEYPAD_CONSOLE_IN_EX_NOTIFY {
   UINTN                   Signature;
   EFI_KEY_DATA            KeyData;
   EFI_KEY_NOTIFY_FUNCTION KeyNotificationFn;
+  BOOLEAN                 DispatchPending;
   LIST_ENTRY              NotifyEntry;
 } KEYPAD_CONSOLE_IN_EX_NOTIFY;
 
@@ -64,6 +65,11 @@ typedef struct {
 
   // counter value of the last poll
   UINT64 Last;
+  BOOLEAN LastValid;
+  BOOLEAN Stopping;
+  BOOLEAN DeviceProtocolOpen;
+  BOOLEAN TextInInstalled;
+  BOOLEAN TextInExInstalled;
 
   BOOLEAN LeftCtrl;
   BOOLEAN RightCtrl;
@@ -99,6 +105,7 @@ typedef struct {
   // Notification Function List
   //
   LIST_ENTRY NotifyList;
+  BOOLEAN NotifyDispatchActive;
   EFI_EVENT  KeyNotifyProcessEvent;
 } KEYPAD_CONSOLE_IN_DEV;
 

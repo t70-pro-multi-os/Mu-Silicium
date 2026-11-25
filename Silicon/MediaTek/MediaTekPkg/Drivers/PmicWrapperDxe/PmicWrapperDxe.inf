@@ -22,10 +22,18 @@
   TimerLib
   DebugLib
   IoLib
+  SynchronizationLib
   PmicWrapperImplLib
+  PcdLib
+  StockPowerCoreLib
 
 [Protocols]
   gMediaTekPmicWrapperProtocolGuid
+  gMediaTekPmicGaugeProtocolGuid ## SOMETIMES_PRODUCES
+  gMediaTekPmicBatteryAdcProtocolGuid ## SOMETIMES_PRODUCES
+
+[FixedPcd]
+  gMediaTekPkgTokenSpaceGuid.PcdMt6358GaugeSnapshot
 
 [Depex]
   TRUE

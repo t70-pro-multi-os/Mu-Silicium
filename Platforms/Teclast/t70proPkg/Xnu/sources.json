@@ -1,0 +1,15 @@
+{
+  "UniXNU": {
+    "url": "https://github.com/UniXNU/UniXNU.git",
+    "commit": "dff276535db3ac394f628cec58a718cd46c20ac2",
+    "sparse": [
+      "package"
+    ],
+    "input": "package/UniXNUPkg/UniXNUPkg.dec"
+  },
+  "DarwinBoot": {
+    "url": "https://github.com/UniXNU/DarwinBoot.git",
+    "commit": "5243c68ec332a227fe3680cd5da6d5a0e127035c",
+    "input": "DarwinBootPkg/Driver/DarwinBoot.inf"
+  }
+}

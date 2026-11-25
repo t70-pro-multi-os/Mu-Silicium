@@ -1,0 +1,35 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=%Provider%
+DriverVer=11/11/2026,0.1.0.0
+CatalogFile=MtkMaliSoc.cat
+PnpLockdown=1
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA678F
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkMaliBoard.sys=1
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkMaliBoard.sys
+[Install.NT.Services]
+AddService=MtkMaliBoard,2,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\MtkMaliBoard.sys
+[Strings]
+Provider="T70Pro Port Project"
+Description="MT6789 shared MFG resource owner (experimental)"
+Disk="T70Pro ARM64 MFG resource owner"

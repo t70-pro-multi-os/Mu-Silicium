@@ -1,0 +1,49 @@
+; SPDX-License-Identifier: BSD-2-Clause-Patent
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%Provider%
+DriverVer=11/19/2026,0.1.0.0
+CatalogFile=MtkCpu.cat
+PnpLockdown=1
+
+[Manufacturer]
+%Provider%=Models,NTarm64.10.0...26100
+[Models.NTarm64.10.0...26100]
+%Description%=Install,ACPI\HANA6799
+
+[DestinationDirs]
+DriverCopy=13
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+MtkCpu.sys=1
+
+[Install.NT]
+CopyFiles=DriverCopy
+[DriverCopy]
+MtkCpu.sys
+[Install.NT.HW]
+AddReg=Security
+[Security]
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GR;;;BA)"
+[Install.NT.Services]
+AddService=MtkCpu,0x00000002,Service
+[Service]
+DisplayName=%Description%
+ServiceType=1
+StartType=0
+ErrorControl=1
+LoadOrderGroup=System Bus Extender
+ServiceBinary=%13%\MtkCpu.sys
+
+[Install.NT.Wdf]
+KmdfService=MtkCpu,Wdf
+[Wdf]
+KmdfLibraryVersion=1.33
+
+[Strings]
+Provider="T70Pro Port Project"
+Description="MediaTek MT6789 CPU performance domains"
+Disk="T70Pro ARM64 CPU performance driver"

@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/dts-v1/;
+/plugin/;
+
+/ {
+	/* Development binding map only. Don't probe before provider ownership. */
+	fragment@0 {
+		target-path = "/soc/i2c@11e01000";
+		__overlay__ {
+			compatible = "teclast,t70pro-mt6983-i2c";
+			status = "disabled";
+		};
+	};
+	fragment@1 {
+		target-path = "/soc/mt6789-afe-pcm@11210000";
+		__overlay__ {
+			compatible = "teclast,t70pro-mt6789-afe";
+			status = "disabled";
+		};
+	};
+};

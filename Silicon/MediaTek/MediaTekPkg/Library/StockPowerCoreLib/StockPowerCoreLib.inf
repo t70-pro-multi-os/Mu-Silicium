@@ -1,0 +1,19 @@
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = StockPowerCoreLib
+  FILE_GUID = 0D0BB8C3-8450-4FD4-AD3D-9AFCA58B5014
+  MODULE_TYPE = BASE
+  VERSION_STRING = 0.1
+  LIBRARY_CLASS = StockPowerCoreLib
+[Sources]
+  StockPowerCore.c
+  MtkGaugeCore.c
+  MtkThermalCore.c
+  MtkSc8989xOtgCore.c
+  MtkHusb311TypecCore.c
+[Packages]
+  MdePkg/MdePkg.dec
+  MediaTekPkg/MediaTekPkg.dec
+
+[LibraryClasses]
+  MusbHostCoreLib

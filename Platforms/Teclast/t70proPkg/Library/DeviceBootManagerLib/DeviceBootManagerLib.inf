@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = T70DeviceBootManagerLib
+  FILE_GUID = 0673B3EC-6B6D-45DB-BD07-A4A2A2264B90
+  MODULE_TYPE = BASE
+  VERSION_STRING = 0.1
+  LIBRARY_CLASS = DeviceBootManagerLib|DXE_DRIVER
+
+[Sources]
+  DeviceBootManager.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsCorePkg/MsCorePkg.dec
+
+[LibraryClasses]
+  BootLogoLib
+  UefiBootManagerLib
+  UefiBootServicesTableLib
+  UefiLib
+  DxeServicesLib
+  DevicePathLib
+  DebugLib
+  MemoryAllocationLib
+  BaseLib
+  IoLib
+  CacheMaintenanceLib
+  TimerLib
+
+[Guids]
+  gEfiEventExitBootServicesGuid
+
+[Protocols]
+  gEfiLoadedImageProtocolGuid
+  gEfiSimpleTextInProtocolGuid
+  gEfiSimpleTextOutProtocolGuid
+  gEfiGraphicsOutputProtocolGuid
+  gEfiSimpleTextInputExProtocolGuid
+  gEfiSimplePointerProtocolGuid
+  gEfiAbsolutePointerProtocolGuid
+  gEfiUsbIoProtocolGuid
+  gEfiSimpleFileSystemProtocolGuid

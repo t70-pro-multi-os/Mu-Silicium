@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = T70ProPlatformSecLib
+  FILE_GUID = 49C25572-DA96-49C8-960C-94D9E614D871
+  MODULE_TYPE = SEC
+  VERSION_STRING = 0.1
+  LIBRARY_CLASS = PlatformSecLib
+[Sources]
+  PlatformSec.c
+  RamBootWatchdog.h
+  PlatformHelper.S
+[Packages]
+  MdePkg/MdePkg.dec
+  ArmPkg/ArmPkg.dec
+  SiliciumPkg/SiliciumPkg.dec
+[LibraryClasses]
+  IoLib
